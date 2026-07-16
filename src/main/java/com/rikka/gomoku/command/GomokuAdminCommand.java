@@ -88,7 +88,7 @@ public class GomokuAdminCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length < 3) {
-            player.sendMessage(lang.getPrefix() + " §cUsage: /gka set <arena_id> <board1|board2|lobby|spawn1|spawn2|spectator>");
+            player.sendMessage(lang.getPrefix() + " §cUsage: /gka set <arena_id> <lobby|spawn1|spawn2|spectator>");
             return true;
         }
 
@@ -188,7 +188,7 @@ public class GomokuAdminCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(lang.getPrefix() + " §6Admin Commands:");
         sender.sendMessage("  §e/gka create <id> §7- Create a new arena");
         sender.sendMessage("  §e/gka delete <id> §7- Delete an arena");
-        sender.sendMessage("  §e/gka set <id> <point> §7- Set arena point (board1/board2/lobby/spawn1/spawn2/spectator)");
+        sender.sendMessage("  §e/gka set <id> <point> §7- Set arena point (lobby/spawn1/spawn2/spectator)");
         sender.sendMessage("  §e/gka maxspec <id> <n> §7- Set max spectators for arena");
         sender.sendMessage("  §e/gka status [id] §7- Show arena status");
         sender.sendMessage("  §e/gka list §7- List all arenas");
@@ -219,7 +219,7 @@ public class GomokuAdminCommand implements CommandExecutor, TabCompleter {
             }
         } else if (args.length == 3) {
             if (args[0].equalsIgnoreCase("set")) {
-                for (String point : List.of("board1", "board2", "lobby", "spawn1", "spawn2", "spectator")) {
+                for (String point : List.of("lobby", "spawn1", "spawn2", "spectator")) {
                     if (point.startsWith(args[2].toLowerCase())) completions.add(point);
                 }
             }

@@ -43,12 +43,12 @@
 
 | 点位 | 说明 |
 |---|---|
-| `board1` | 棋盘第一个角（最小坐标） |
-| `board2` | 棋盘对角（最大坐标） |
 | `lobby` | 大厅等待点 |
 | `spawn1` | 白棋玩家站位 |
 | `spawn2` | 黑棋玩家站位 |
 | `spectator` | 观战区 |
+
+> 棋盘位置和所有点位在创建场地时自动计算，`/gka set` 仅用于手动微调。
 
 ## 权限
 
@@ -61,16 +61,11 @@
 ## 搭建步骤
 
 1. 将插件放入 `plugins/` 目录，启动服务器
-2. `/gka create arena1` — 创建场地
-3. 进入生成的场地世界，设置各点位（站在目标位置执行）：
-   - `/gka set arena1 board1`
-   - `/gka set arena1 board2`
-   - `/gka set arena1 lobby`
-   - `/gka set arena1 spawn1`
-   - `/gka set arena1 spawn2`
-   - `/gka set arena1 spectator`
-4. `/gka status arena1` — 确认场地就绪
-5. 玩家使用 `/gomoku join pvp` 即可开始
+2. `/gka create arena1` — 创建场地（自动生成世界、棋盘和所有点位）
+3. `/gka status arena1` — 确认场地就绪
+4. 玩家使用 `/gomoku join pvp` 即可开始
+
+> 棋盘尺寸、方块材质、Y 坐标均由 `config.yml` 控制。修改配置后 `/gka reload` 即可自动重建所有棋盘。
 
 ## 配置
 
@@ -79,6 +74,7 @@
 ```yaml
 board:
   size: 19                     # 棋盘大小（9-25）
+  y-level: 64                  # 棋盘 Y 坐标
   surface-block: OAK_PLANKS    # 棋盘表面方块
   grid-block: DARK_OAK_PLANKS  # 棋盘边框方块
 
