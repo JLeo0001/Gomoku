@@ -1,0 +1,28 @@
+name: Gomoku
+version: '${version}'
+main: com.rikka.gomoku.GomokuPlugin
+api-version: '1.21'
+softdepend: [Multiverse-Core]
+description: A fully-featured Gomoku (五子棋) minigame plugin for Purpur
+
+commands:
+  gomoku:
+    description: Player commands for Gomoku
+    usage: /gomoku <join|leave|version>
+    aliases: [gk, go]
+  gomokuadmin:
+    description: Admin commands for Gomoku
+    usage: /gomokuadmin <create|delete|set|status|end|reload>
+    aliases: [gka, goadmin]
+    permission: gomoku.admin
+
+permissions:
+  gomoku.player:
+    description: Allows using player commands
+    default: true
+  gomoku.admin:
+    description: Allows using admin commands
+    default: op
+  gomoku.spectate:
+    description: Allows spectating games
+    default: true

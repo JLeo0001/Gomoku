@@ -1,0 +1,70 @@
+# Gomoku 中文语言文件
+
+prefix: "&8[&6五子棋&8]&r"
+
+# 通用
+no-permission: "{prefix} &c你没有权限执行此命令。"
+player-only: "{prefix} &c此命令只能由玩家执行。"
+config-reloaded: "{prefix} &a配置已重载。"
+
+# 游戏加入/离开
+joined-pvp: "{prefix} &a你已加入 PvP 匹配队列，等待对手中..."
+joined-pve: "{prefix} &a你已加入 PvE 对局，游戏即将开始..."
+already-in-game: "{prefix} &c你已经在游戏中或队列中了！"
+no-arena-available: "{prefix} &c当前没有可用的场地。"
+left-game: "{prefix} &a你已离开游戏。"
+not-in-game: "{prefix} &c你当前不在游戏中。"
+game-full: "{prefix} &c该场地已满。"
+
+# 倒计时
+countdown-start: "{prefix} &e游戏将在 &6{seconds} &e秒后开始！"
+countdown-cancelled: "{prefix} &c倒计时已取消（玩家不足）。"
+
+# 对局
+game-started: "{prefix} &a对局开始！&f{player1} &7(vs) &f{player2}"
+game-started-pve: "{prefix} &a人机对局开始！&f{player} &7(vs) &8AI"
+your-turn: "{prefix} &e轮到你了！请点击棋盘落子。"
+opponent-turn: "{prefix} &7等待对手落子..."
+ai-thinking: "{prefix} &7AI 正在思考..."
+turn-timeout-warning: "{prefix} &e你还有 &c{seconds} &e秒！"
+turn-timeout: "{prefix} &c{player} 超时未落子，判负！"
+
+# 胜负
+win: "{prefix} &6{player} &a获胜！"
+lose: "{prefix} &c你输了！"
+draw: "{prefix} &e平局！"
+win-by-timeout: "{prefix} &6{player} &a因对手超时获胜！"
+win-by-forfeit: "{prefix} &6{player} &a因对手弃权获胜！"
+
+# 观战
+spectate-join: "{prefix} &a你正在观看 &f{player1} &7vs &f{player2} 的对局。"
+spectate-leave: "{prefix} &a你已退出观战。"
+spectate-full: "{prefix} &c该场地观战人数已满。"
+spectator-chat-prefix: "&7[观战]&r"
+
+# 场地管理
+arena-created: "{prefix} &a场地 &f{arena} &a已创建。"
+arena-deleted: "{prefix} &a场地 &f{arena} &a已删除。"
+arena-not-found: "{prefix} &c场地 &f{arena} &c不存在。"
+arena-in-use: "{prefix} &c场地 &f{arena} &c正在使用中。"
+arena-exists: "{prefix} &c场地 &f{arena} &c已存在。"
+arena-list-header: "{prefix} &a场地列表："
+arena-list-entry: "  &7- &f{name} &7[状态: {state}]"
+arena-status: "{prefix} &a场地 {name} | 状态: {state} | 当前对局: {game} | 观战: {spectators}/{max}"
+
+# 点位设置
+point-set: "{prefix} &a已设置 &f{arena} &a的 &f{point} &a点位。"
+point-missing: "{prefix} &c场地 &f{arena} &c的 &f{point} &c点位尚未设置。"
+not-in-arena-world: "{prefix} &c你不在该场地的世界中。"
+
+# 强制结束
+game-ended: "{prefix} &a场地 &f{arena} &a的对局已被强制结束。"
+all-games-ended: "{prefix} &a所有对局已被强制结束。"
+no-active-game: "{prefix} &c场地 &f{arena} &c没有正在进行中的对局。"
+
+# 版本
+version: "{prefix} &aGomoku v{version}"
+
+# 无效操作
+invalid-move: "{prefix} &c此处不能落子！"
+not-your-turn: "{prefix} &c现在不是你的回合！"

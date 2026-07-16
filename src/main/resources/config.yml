@@ -1,0 +1,24 @@
+# ============================================
+# Gomoku Plugin Configuration
+# ============================================
+
+# Board settings
+board:
+  size: 19                     # Board size (e.g., 15 or 19)
+  surface-block: OAK_PLANKS    # Block used for the board surface
+  grid-block: DARK_OAK_PLANKS  # Block used for grid lines (set same as surface to hide)
+
+# Timing (in seconds)
+timing:
+  lobby-countdown: 30          # Countdown before game starts
+  turn-timeout: 60             # Max time per turn
+  game-max-duration: 1800      # Max game duration (30 min)
+
+# Spectator settings
+spectator:
+  max-per-arena: 10            # Max spectators per arena
+
+# Multiverse integration
+multiverse:
+  enabled: true
+  world-prefix: gomoku_arena_  # Prefix for arena worlds

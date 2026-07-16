@@ -1,0 +1,70 @@
+# Gomoku English Language File
+
+prefix: "&8[&6Gomoku&8]&r"
+
+# General
+no-permission: "{prefix} &cYou don't have permission."
+player-only: "{prefix} &cThis command can only be used by players."
+config-reloaded: "{prefix} &aConfiguration reloaded."
+
+# Join/Leave
+joined-pvp: "{prefix} &aYou joined the PvP queue. Waiting for opponent..."
+joined-pve: "{prefix} &aYou joined a PvE match. Game starting soon..."
+already-in-game: "{prefix} &cYou are already in a game or queue!"
+no-arena-available: "{prefix} &cNo arena available."
+left-game: "{prefix} &aYou left the game."
+not-in-game: "{prefix} &cYou are not in a game."
+game-full: "{prefix} &cThis arena is full."
+
+# Countdown
+countdown-start: "{prefix} &eGame starting in &6{seconds} &eseconds!"
+countdown-cancelled: "{prefix} &cCountdown cancelled (not enough players)."
+
+# Game
+game-started: "{prefix} &aGame started! &f{player1} &7vs &f{player2}"
+game-started-pve: "{prefix} &aPvE game started! &f{player} &7vs &8AI"
+your-turn: "{prefix} &eYour turn! Click the board to place a piece."
+opponent-turn: "{prefix} &7Waiting for opponent..."
+ai-thinking: "{prefix} &7AI is thinking..."
+turn-timeout-warning: "{prefix} &eYou have &c{seconds} &eseconds left!"
+turn-timeout: "{prefix} &c{player} ran out of time and loses!"
+
+# Win/Lose/Draw
+win: "{prefix} &6{player} &awins!"
+lose: "{prefix} &cYou lose!"
+draw: "{prefix} &eDraw!"
+win-by-timeout: "{prefix} &6{player} &awins by timeout!"
+win-by-forfeit: "{prefix} &6{player} &awins by forfeit!"
+
+# Spectate
+spectate-join: "{prefix} &aYou are now spectating &f{player1} &7vs &f{player2}."
+spectate-leave: "{prefix} &aYou are no longer spectating."
+spectate-full: "{prefix} &cSpectator limit reached for this arena."
+spectator-chat-prefix: "&7[Spectator]&r"
+
+# Arena Management
+arena-created: "{prefix} &aArena &f{arena} &acreated."
+arena-deleted: "{prefix} &aArena &f{arena} &adeleted."
+arena-not-found: "{prefix} &cArena &f{arena} &cnot found."
+arena-in-use: "{prefix} &cArena &f{arena} &cis in use."
+arena-exists: "{prefix} &cArena &f{arena} &calready exists."
+arena-list-header: "{prefix} &aArena list:"
+arena-list-entry: "  &7- &f{name} &7[Status: {state}]"
+arena-status: "{prefix} &aArena {name} | Status: {state} | Game: {game} | Spectators: {spectators}/{max}"
+
+# Point Setting
+point-set: "{prefix} &aSet &f{point} &apoint for arena &f{arena}&a."
+point-missing: "{prefix} &cPoint &f{point} &cnot set for arena &f{arena}&c."
+not-in-arena-world: "{prefix} &cYou are not in this arena's world."
+
+# Force End
+game-ended: "{prefix} &aGame at arena &f{arena} &aforcefully ended."
+all-games-ended: "{prefix} &aAll games forcefully ended."
+no-active-game: "{prefix} &cNo active game at arena &f{arena}&c."
+
+# Version
+version: "{prefix} &aGomoku v{version}"
+
+# Invalid
+invalid-move: "{prefix} &cCannot place a piece there!"
+not-your-turn: "{prefix} &cIt's not your turn!"
