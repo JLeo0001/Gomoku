@@ -53,6 +53,9 @@ public class ArenaManager {
         arena.autoGeneratePositions(config.getBoardSize(), config.getBoardY());
         arenas.put(id, arena);
 
+        // Set world spawn to lobby for safety
+        world.setSpawnLocation(arena.getLobbySpawn());
+
         // Render the entire arena (board + lobby + spawn pads + spectator deck)
         BoardRenderer renderer = new BoardRenderer(config.getSurfaceBlock(), config.getGridBlock());
         renderer.renderFullArena(config.getBoardSize(), config.getBoardY(), world);
@@ -87,7 +90,7 @@ public class ArenaManager {
         WorldCreator creator = new WorldCreator(worldName);
         creator.type(WorldType.FLAT);
         creator.generateStructures(false);
-        creator.generatorSettings("{\"layers\":[{\"block\":\"air\",\"height\":1}],\"biome\":\"minecraft:plains\"}");
+        creator.generatorSettings("{\"layers\":[{\"block\":\"bedrock\",\"height\":1},{\"block\":\"stone\",\"height\":127}],\"biome\":\"minecraft:plains\"}");
 
         World world = creator.createWorld();
         if (world != null) {

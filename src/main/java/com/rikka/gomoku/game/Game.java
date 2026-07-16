@@ -65,21 +65,18 @@ public class Game {
 
         if (queuedPlayers.size() == 1) {
             player1 = player.getUniqueId();
-            // Save player data
-            plugin.getGameManager().savePlayerData(player, arena.getLobbySpawn());
+            // Save return location (where player was before joining)
+            plugin.getGameManager().savePlayerData(player, player.getLocation());
             player.teleport(arena.getLobbySpawn());
 
             if (!isPvE) {
                 player.sendMessage(lang.format("joined-pvp", Map.of()));
-                // Wait for second player
-                lang.format("countdown-start", Map.of());
             }
         } else if (queuedPlayers.size() == 2) {
             player2 = player.getUniqueId();
-            plugin.getGameManager().savePlayerData(player, arena.getLobbySpawn());
+            plugin.getGameManager().savePlayerData(player, player.getLocation());
             player.teleport(arena.getLobbySpawn());
 
-            // Start countdown
             startCountdown();
         }
     }
@@ -91,7 +88,7 @@ public class Game {
         this.isPvE = true;
         player1 = player.getUniqueId();
         player2 = null; // AI
-        plugin.getGameManager().savePlayerData(player, arena.getLobbySpawn());
+        plugin.getGameManager().savePlayerData(player, player.getLocation());
         player.teleport(arena.getLobbySpawn());
         queuedPlayers.add(player.getUniqueId());
 
@@ -144,6 +141,8 @@ public class Game {
         if (p1 != null && p1.isOnline()) {
             p1.teleport(arena.getPlayer1Spawn());
             p1.setGameMode(GameMode.ADVENTURE);
+            p1.setAllowFlight(true);
+            p1.setFlying(true);
             p1.getInventory().clear();
         }
 
@@ -152,6 +151,8 @@ public class Game {
             if (p2 != null && p2.isOnline()) {
                 p2.teleport(arena.getPlayer2Spawn());
                 p2.setGameMode(GameMode.ADVENTURE);
+                p2.setAllowFlight(true);
+                p2.setFlying(true);
                 p2.getInventory().clear();
             }
         }
@@ -402,6 +403,9 @@ public class Game {
 
         // Clear spectators
         spectatorManager.clearArena(arena.getId());
+
+        // Clean up game manager state
+        plugin.getGameManager().removeGame(arena.getId());
 
         // Reset game state
         board.clear();

@@ -65,6 +65,8 @@ public class GameManager {
         player.getInventory().setContents(data.getInventoryContents());
         player.getEnderChest().setContents(data.getEnderChestContents());
         player.setGameMode(data.getGameMode());
+        player.setAllowFlight(false);
+        player.setFlying(false);
         player.setHealth(Math.min(data.getHealth(), 20));
         player.setFoodLevel(data.getFoodLevel());
         player.setSaturation(data.getSaturation());
