@@ -67,6 +67,123 @@ no-active-game: "{prefix} &cNo active game at arena &f{arena}&c."
 # Version
 version: "{prefix} &aGomoku v{version}"
 
+# GUI
+gui:
+  common:
+    filler-name: " "
+    back-name: "&7← Back"
+
+  main:
+    title: "&8Gomoku — Main Menu"
+    pvp-name: "&a⚔ PvP Quick Match"
+    pvp-lore:
+      - "&7Auto-join the first available arena"
+      - "&7and match against another player."
+      - ""
+      - "&eClick to join!"
+    arena-list-name: "&b☰ Browse Arenas"
+    arena-list-lore:
+      - "&7View all arenas and pick one"
+      - "&7to play or watch."
+      - ""
+      - "&eClick to browse"
+    pve-name: "&d☠ PvE vs AI"
+    pve-lore:
+      - "&7Play against the computer AI."
+      - "&7Auto-joins first available arena."
+      - ""
+      - "&eClick to join!"
+    spectate-name: "&e👁 Spectate Game"
+    spectate-lore:
+      - "&7Watch an ongoing game."
+      - ""
+      - "&eClick to browse active games"
+    leave-name: "&c✖ Leave"
+    leave-lore:
+      - "&7Leave your current game"
+      - "&7or stop spectating."
+      - ""
+      - "&eClick to leave"
+    status-idle-name: "&6📖 Status"
+    status-idle-lore:
+      - "&7You are not currently in a game."
+      - ""
+      - "&fArenas: &e{arenas}"
+      - "&fVersion: &eGomoku v{version}"
+    status-in-game-name: "&a● In Game"
+    status-in-game-lore:
+      - "&7You are currently playing in:"
+      - "&fArena: &e{arena}"
+      - "&fMode: &e{mode}"
+      - "&fOpponent: &e{opponent}"
+      - "&fState: &e{state}"
+    status-spectating-name: "&b● Spectating"
+    status-spectating-lore:
+      - "&7You are spectating arena:"
+      - "&f{arena}"
+
+  arena-list:
+    title: "&8Arena Browser"
+    empty-name: "&cNo Arenas"
+    empty-lore:
+      - "&7There are no arenas configured."
+      - "&7Contact an admin to create one."
+    item-idle-name: "&a● {arena}"
+    item-idle-lore:
+      - "&7Status: &aIDLE"
+      - "&7Spectators: &f{spectators}/{max}"
+      - ""
+      - "&eClick to select this arena"
+    item-inuse-name: "&c● {arena}"
+    item-inuse-lore:
+      - "&7Status: &cIN USE"
+      - "&7Game: &f{game}"
+      - "&7Spectators: &f{spectators}/{max}"
+      - ""
+      - "&eClick for options"
+
+  arena-action:
+    title: "&8Arena: {arena}"
+    pvp-name: "&a⚔ Join PvP"
+    pvp-lore:
+      - "&7Join arena &f{arena} &7in PvP mode."
+      - "&7Wait for an opponent."
+      - ""
+      - "&eClick to join"
+    pve-name: "&d☠ Join PvE"
+    pve-lore:
+      - "&7Join arena &f{arena} &7in PvE mode."
+      - "&7Play against the AI."
+      - ""
+      - "&eClick to join"
+    spectate-name: "&e👁 Spectate"
+    spectate-lore:
+      - "&7Watch the current game in"
+      - "&7arena &f{arena}&7."
+      - ""
+      - "&eClick to spectate"
+    inuse-name: "&cArena In Use"
+    inuse-lore:
+      - "&7Arena &f{arena} &7is currently"
+      - "&7in use (state: &e{state}&7)."
+      - ""
+      - "&7Wait for it to become free,"
+      - "&7or spectate if a game is active."
+
+  spectate-list:
+    title: "&8Active Games"
+    empty-name: "&cNo Active Games"
+    empty-lore:
+      - "&7There are no games in progress."
+      - "&7Check back later!"
+    item-name: "&e{arena}"
+    item-lore:
+      - "&7{player1} &fvs &7{player2}"
+      - "&7Spectators: &f{spectators}"
+      - ""
+      - "&eClick to spectate"
+
 # Invalid
 invalid-move: "{prefix} &cCannot place a piece there!"
 not-your-turn: "{prefix} &cIt's not your turn!"
+open-gui: "{prefix} &aOpening Gomoku menu..."

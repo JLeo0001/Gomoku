@@ -9,8 +9,11 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class LanguageManager {
     private final GomokuPlugin plugin;
@@ -93,6 +96,50 @@ public class LanguageManager {
             }
         }
         return msg;
+    }
+
+    /** Get a string with placeholder replacement. */
+    public String get(String key, Map<String, String> replacements) {
+        String msg = get(key);
+        if (replacements != null) {
+            for (Map.Entry<String, String> entry : replacements.entrySet()) {
+                msg = msg.replace("{" + entry.getKey() + "}", entry.getValue());
+            }
+        }
+        return msg;
+    }
+
+    /** Get a string list from the language file. */
+    public List<String> getList(String key) {
+        return getList(key, Collections.emptyMap());
+    }
+
+    /** Get a string list with placeholder replacement. */
+    public List<String> getList(String key, Map<String, String> replacements) {
+        FileConfiguration cfg = languageCache.get(currentLanguage);
+        if (cfg == null) cfg = languageCache.get("en_US");
+        if (cfg == null) return List.of("Missing: " + key);
+
+        List<?> raw = cfg.getList(key);
+        if (raw == null) return List.of("Missing: " + key);
+
+        return raw.stream()
+            .map(Object::toString)
+            .map(s -> ChatColor.translateAlternateColorCodes('&', s))
+            .map(s -> {
+                if (replacements != null) {
+                    for (Map.Entry<String, String> e : replacements.entrySet()) {
+                        s = s.replace("{" + e.getKey() + "}", e.getValue());
+                    }
+                }
+                return s;
+            })
+            .collect(Collectors.toList());
+    }
+
+    /** Static color-code translator for GUI items. */
+    public static String color(String text) {
+        return ChatColor.translateAlternateColorCodes('&', text);
     }
 
     public String getPrefix() {

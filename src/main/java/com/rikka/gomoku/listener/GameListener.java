@@ -6,6 +6,7 @@ import com.rikka.gomoku.arena.BoardRenderer;
 import com.rikka.gomoku.game.Game;
 import com.rikka.gomoku.game.GameManager;
 import com.rikka.gomoku.game.GameState;
+import com.rikka.gomoku.gui.GomokuInventoryHolder;
 import com.rikka.gomoku.spectator.SpectatorManager;
 import java.util.UUID;
 import org.bukkit.GameMode;
@@ -133,6 +134,8 @@ public class GameListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (event.getWhoClicked() instanceof Player player) {
+            // Don't block Gomoku GUI interactions
+            if (event.getInventory().getHolder() instanceof GomokuInventoryHolder) return;
             if (isInGameOrSpectating(player)) {
                 event.setCancelled(true);
             }

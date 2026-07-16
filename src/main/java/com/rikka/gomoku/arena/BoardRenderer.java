@@ -16,8 +16,6 @@ public class BoardRenderer {
     // Structure blocks
     private static final Material LOBBY_FLOOR = Material.STONE_BRICKS;
     private static final Material SPAWN_PAD = Material.SMOOTH_STONE_SLAB;
-    private static final Material SPECTATOR_FLOOR = Material.GLASS;
-    private static final Material RAILING = Material.GLASS_PANE;
 
     public BoardRenderer(Material surfaceBlock, Material gridBlock) {
         this.surfaceBlock = surfaceBlock;
@@ -32,7 +30,6 @@ public class BoardRenderer {
      * Clear all arena structures and pieces for regeneration.
      */
     public void clearAll(World world, int boardSize, int yLevel) {
-        int half = boardSize / 2;
         int margin = 8;
 
         // Clear board surface + pieces
@@ -42,26 +39,16 @@ public class BoardRenderer {
                 world.getBlockAt(x, yLevel + 1, z).setType(Material.AIR);
             }
         }
-
-        // Clear spectator deck (5×5 glass floor + railings, centered at half,half)
-        int deckRadius = 3;
-        for (int x = -deckRadius; x <= deckRadius; x++) {
-            for (int z = -deckRadius; z <= deckRadius; z++) {
-                world.getBlockAt(half + x, yLevel + 8, half + z).setType(Material.AIR);
-                world.getBlockAt(half + x, yLevel + 9, half + z).setType(Material.AIR);
-            }
-        }
     }
 
     /**
-     * Build everything: board + lobby platform + player platforms + spectator deck.
+     * Build everything: board + lobby platform + player platforms.
      */
     public void renderFullArena(int boardSize, int yLevel, World world) {
         Location origin = new Location(world, 0, yLevel, 0);
         renderFullBoard(origin, boardSize);
         renderLobby(boardSize, yLevel, world);
         renderPlayerPlatforms(boardSize, yLevel, world);
-        renderSpectatorDeck(boardSize, yLevel, world);
     }
 
     /**
@@ -137,33 +124,6 @@ public class BoardRenderer {
         int bx = boardSize + 3;
         for (int z = -1; z <= 1; z++) {
             world.getBlockAt(bx, y, half + z).setType(SPAWN_PAD);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // Spectator deck (elevated glass platform above board center)
-    // ═══════════════════════════════════════════════════════════════
-
-    private void renderSpectatorDeck(int boardSize, int y, World world) {
-        int half = boardSize / 2;
-        int dy = y + 8; // platform Y
-        int radius = 3;
-
-        // Glass floor (5×5)
-        for (int x = -radius; x <= radius; x++) {
-            for (int z = -radius; z <= radius; z++) {
-                world.getBlockAt(half + x, dy, half + z).setType(SPECTATOR_FLOOR);
-            }
-        }
-
-        // Glass railing around the edge
-        for (int x = -radius; x <= radius; x++) {
-            world.getBlockAt(half + x, dy + 1, half - radius).setType(RAILING);
-            world.getBlockAt(half + x, dy + 1, half + radius).setType(RAILING);
-        }
-        for (int z = -radius; z <= radius; z++) {
-            world.getBlockAt(half - radius, dy + 1, half + z).setType(RAILING);
-            world.getBlockAt(half + radius, dy + 1, half + z).setType(RAILING);
         }
     }
 

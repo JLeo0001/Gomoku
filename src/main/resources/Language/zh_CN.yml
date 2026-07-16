@@ -67,6 +67,123 @@ no-active-game: "{prefix} &c场地 &f{arena} &c没有正在进行中的对局。
 # 版本
 version: "{prefix} &aGomoku v{version}"
 
+# GUI
+gui:
+  common:
+    filler-name: " "
+    back-name: "&7← 返回"
+
+  main:
+    title: "&8五子棋 — 主菜单"
+    pvp-name: "&a⚔ PvP 快速匹配"
+    pvp-lore:
+      - "&7自动加入第一个可用场地"
+      - "&7与其他玩家对战。"
+      - ""
+      - "&e点击加入！"
+    arena-list-name: "&b☰ 浏览场地"
+    arena-list-lore:
+      - "&7查看所有场地并选择"
+      - "&7一个进行游戏或观战。"
+      - ""
+      - "&e点击浏览"
+    pve-name: "&d☠ 人机对战"
+    pve-lore:
+      - "&7与电脑 AI 对战。"
+      - "&7自动加入第一个可用场地。"
+      - ""
+      - "&e点击加入！"
+    spectate-name: "&e👁 观战"
+    spectate-lore:
+      - "&7观看正在进行中的对局。"
+      - ""
+      - "&e点击浏览活跃对局"
+    leave-name: "&c✖ 离开"
+    leave-lore:
+      - "&7离开当前对局"
+      - "&7或停止观战。"
+      - ""
+      - "&e点击离开"
+    status-idle-name: "&6📖 状态"
+    status-idle-lore:
+      - "&7你当前不在任何对局中。"
+      - ""
+      - "&f场地数: &e{arenas}"
+      - "&f版本: &e五子棋 v{version}"
+    status-in-game-name: "&a● 游戏中"
+    status-in-game-lore:
+      - "&7你正在对局中："
+      - "&f场地: &e{arena}"
+      - "&f模式: &e{mode}"
+      - "&f对手: &e{opponent}"
+      - "&f状态: &e{state}"
+    status-spectating-name: "&b● 观战中"
+    status-spectating-lore:
+      - "&7你正在观看场地："
+      - "&f{arena}"
+
+  arena-list:
+    title: "&8场地浏览"
+    empty-name: "&c没有场地"
+    empty-lore:
+      - "&7当前没有配置任何场地。"
+      - "&7请联系管理员创建。"
+    item-idle-name: "&a● {arena}"
+    item-idle-lore:
+      - "&7状态: &a空闲"
+      - "&7观战: &f{spectators}/{max}"
+      - ""
+      - "&e点击选择此场地"
+    item-inuse-name: "&c● {arena}"
+    item-inuse-lore:
+      - "&7状态: &c使用中"
+      - "&7对局: &f{game}"
+      - "&7观战: &f{spectators}/{max}"
+      - ""
+      - "&e点击查看选项"
+
+  arena-action:
+    title: "&8场地: {arena}"
+    pvp-name: "&a⚔ 加入 PvP"
+    pvp-lore:
+      - "&7以 PvP 模式加入 &f{arena}&7。"
+      - "&7等待对手加入。"
+      - ""
+      - "&e点击加入"
+    pve-name: "&d☠ 加入人机"
+    pve-lore:
+      - "&7以 PvE 模式加入 &f{arena}&7。"
+      - "&7与 AI 对战。"
+      - ""
+      - "&e点击加入"
+    spectate-name: "&e👁 观战"
+    spectate-lore:
+      - "&7观看 &f{arena} &7场地的"
+      - "&7当前对局。"
+      - ""
+      - "&e点击观战"
+    inuse-name: "&c场地使用中"
+    inuse-lore:
+      - "&7场地 &f{arena} &7正在"
+      - "&7使用中（状态: &e{state}&7）。"
+      - ""
+      - "&7请等待释放，"
+      - "&7或观战活跃对局。"
+
+  spectate-list:
+    title: "&8活跃对局"
+    empty-name: "&c没有活跃对局"
+    empty-lore:
+      - "&7当前没有进行中的对局。"
+      - "&7稍后再来看看！"
+    item-name: "&e{arena}"
+    item-lore:
+      - "&7{player1} &fvs &7{player2}"
+      - "&7观战人数: &f{spectators}"
+      - ""
+      - "&e点击观战"
+
 # 无效操作
 invalid-move: "{prefix} &c此处不能落子！"
 not-your-turn: "{prefix} &c现在不是你的回合！"
+open-gui: "{prefix} &a正在打开五子棋菜单..."

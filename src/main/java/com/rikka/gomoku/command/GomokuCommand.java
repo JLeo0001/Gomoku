@@ -7,6 +7,7 @@ import com.rikka.gomoku.config.LanguageManager;
 import com.rikka.gomoku.game.Game;
 import com.rikka.gomoku.game.GameManager;
 import com.rikka.gomoku.game.GameState;
+import com.rikka.gomoku.gui.GomokuGui;
 import com.rikka.gomoku.spectator.SpectatorManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -24,12 +25,14 @@ public class GomokuCommand implements CommandExecutor, TabCompleter {
     private final GameManager gameManager;
     private final LanguageManager lang;
     private final SpectatorManager spectatorManager;
+    private final GomokuGui gui;
 
     public GomokuCommand(GomokuPlugin plugin) {
         this.plugin = plugin;
         this.gameManager = plugin.getGameManager();
         this.lang = plugin.getLanguageManager();
         this.spectatorManager = plugin.getSpectatorManager();
+        this.gui = plugin.getGomokuGui();
     }
 
     @Override
@@ -40,7 +43,9 @@ public class GomokuCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 0) {
-            sendHelp(player);
+            // Open GUI instead of text help
+            player.sendMessage(lang.format("open-gui", Map.of()));
+            gui.openMain(player);
             return true;
         }
 
@@ -48,6 +53,10 @@ public class GomokuCommand implements CommandExecutor, TabCompleter {
             case "join" -> handleJoin(player, args);
             case "leave", "quit" -> handleLeave(player);
             case "spectate", "spec", "watch" -> handleSpectate(player, args);
+            case "gui", "menu" -> {
+                gui.openMain(player);
+                yield true;
+            }
             case "version", "ver" -> handleVersion(player);
             default -> {
                 sendHelp(player);
@@ -198,7 +207,7 @@ public class GomokuCommand implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> subs = new ArrayList<>(List.of("join", "leave", "spectate", "version"));
+            List<String> subs = new ArrayList<>(List.of("join", "leave", "spectate", "gui", "menu", "version"));
             for (String s : subs) {
                 if (s.startsWith(args[0].toLowerCase())) completions.add(s);
             }

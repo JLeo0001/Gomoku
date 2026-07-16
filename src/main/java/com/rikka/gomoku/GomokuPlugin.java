@@ -8,6 +8,7 @@ import com.rikka.gomoku.command.GomokuCommand;
 import com.rikka.gomoku.config.ConfigManager;
 import com.rikka.gomoku.config.LanguageManager;
 import com.rikka.gomoku.game.GameManager;
+import com.rikka.gomoku.gui.GomokuGui;
 import com.rikka.gomoku.listener.GameListener;
 import com.rikka.gomoku.spectator.SpectatorManager;
 import org.bukkit.Bukkit;
@@ -23,6 +24,7 @@ public final class GomokuPlugin extends JavaPlugin {
     private GameManager gameManager;
     private ArenaManager arenaManager;
     private SpectatorManager spectatorManager;
+    private GomokuGui gomokuGui;
 
     @Override
     public void onEnable() {
@@ -33,6 +35,7 @@ public final class GomokuPlugin extends JavaPlugin {
         this.gameManager = new GameManager(this);
         this.spectatorManager = new SpectatorManager(languageManager);
         this.arenaManager = new ArenaManager(this, configManager, languageManager, gameManager);
+        this.gomokuGui = new GomokuGui(this);
 
         // Re-detect existing arena worlds and regenerate boards
         recoverExistingArenas();
@@ -41,6 +44,7 @@ public final class GomokuPlugin extends JavaPlugin {
         Objects.requireNonNull(getCommand("gomokuadmin")).setExecutor(new GomokuAdminCommand(this));
 
         getServer().getPluginManager().registerEvents(new GameListener(this), this);
+        getServer().getPluginManager().registerEvents(gomokuGui, this);
 
         getLogger().info("========================================");
         getLogger().info("  Gomoku v" + getDescription().getVersion());
@@ -99,4 +103,5 @@ public final class GomokuPlugin extends JavaPlugin {
     public GameManager getGameManager() { return gameManager; }
     public ArenaManager getArenaManager() { return arenaManager; }
     public SpectatorManager getSpectatorManager() { return spectatorManager; }
+    public GomokuGui getGomokuGui() { return gomokuGui; }
 }
