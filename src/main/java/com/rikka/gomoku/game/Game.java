@@ -7,6 +7,7 @@ import com.rikka.gomoku.arena.ArenaState;
 import com.rikka.gomoku.arena.BoardRenderer;
 import com.rikka.gomoku.config.ConfigManager;
 import com.rikka.gomoku.config.LanguageManager;
+import com.rikka.gomoku.sound.SoundManager;
 import com.rikka.gomoku.spectator.SpectatorManager;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -33,6 +34,7 @@ public class Game {
     private final ConfigManager config;
     private final LanguageManager lang;
     private final SpectatorManager spectatorManager;
+    private final SoundManager sounds;
     private final BoardRenderer renderer;
 
     private final Board board;
@@ -65,6 +67,7 @@ public class Game {
         this.config = plugin.getConfigManager();
         this.lang = plugin.getLanguageManager();
         this.spectatorManager = plugin.getSpectatorManager();
+        this.sounds = plugin.getSoundManager();
         this.renderer = new BoardRenderer(config.getSurfaceBlock(), config.getGridBlock());
         this.board = new Board(config.getBoardSize());
     }
@@ -165,6 +168,9 @@ public class Game {
                 if (sec[0] <= 10 || sec[0] % 10 == 0)
                     broadcastToPlayers(lang.format("countdown-start",
                         Map.of("seconds", String.valueOf(sec[0]))));
+                // Play tick sound to both queued players
+                sounds.playCountdownTick(whitePlayerId);
+                sounds.playCountdownTick(blackPlayerId);
                 sec[0]--;
             }
         }.runTaskTimer(plugin, 0L, 20L);
@@ -292,6 +298,9 @@ public class Game {
         moveHistory.add(new Move(row, col, piece));
         renderer.placePiece(arena.getBoardOrigin(), row, col, piece);
 
+        // Play placement sound
+        sounds.playPiecePlace(whitePlayerId, blackPlayerId);
+
         if (checkGameEnd(row, col, piece)) return;
         advanceTurn();
     }
@@ -330,6 +339,9 @@ public class Game {
                     moveHistory.add(new Move(move[0], move[1], aiColor));
                     renderer.placePiece(arena.getBoardOrigin(), move[0], move[1], aiColor);
 
+                    // Play placement sound
+                    sounds.playPiecePlace(whitePlayerId, blackPlayerId);
+
                     if (checkGameEnd(move[0], move[1], aiColor)) return;
                     advanceTurn();
                 }
@@ -358,13 +370,16 @@ public class Game {
         cancelAllTimers();
 
         String winnerName = null;
+        UUID winnerId = null;
         UUID loserId = null;
 
         if (winner == Board.WHITE) {
             winnerName = playerName(whitePlayerId);
+            winnerId = whitePlayerId;
             loserId = blackPlayerId;
         } else if (winner == Board.BLACK) {
             winnerName = playerName(blackPlayerId);
+            winnerId = blackPlayerId;
             loserId = whitePlayerId;
         }
 
@@ -373,6 +388,17 @@ public class Game {
             : lang.format("draw", Map.of());
         broadcastToPlayers(msg);
         spectatorManager.broadcastToArenaSpectators(arena.getId(), msg);
+
+        // Play win/lose/draw sounds
+        if (winnerId != null) {
+            sounds.playWin(winnerId);
+        }
+        if (loserId != null) {
+            sounds.playLose(loserId);
+        }
+        if (winner == 0) { // draw
+            sounds.playDraw(whitePlayerId, blackPlayerId);
+        }
 
         // Notify loser
         if (loserId != null) {

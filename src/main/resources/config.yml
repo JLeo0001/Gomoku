@@ -19,6 +19,14 @@ timing:
 spectator:
   max-per-arena: 10            # Max spectators per arena
 
+# Sound effects
+sounds:
+  enabled: true
+  countdown: BLOCK_NOTE_BLOCK_PLING        # Played each second during lobby countdown
+  piece-place: BLOCK_STONE_PLACE           # Played when a piece is placed on the board
+  win: ENTITY_PLAYER_LEVELUP               # Played to the winner
+  lose: ENTITY_ENDERMAN_TELEPORT           # Played to the loser
+
 # Multiverse integration
 multiverse:
   enabled: true

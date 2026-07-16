@@ -63,4 +63,26 @@ public class ConfigManager {
     public String getWorldPrefix() {
         return config.getString("multiverse.world-prefix", "gomoku_arena_");
     }
+
+    // ── Sound settings ──────────────────────────────────────────
+
+    public boolean isSoundsEnabled() {
+        return config.getBoolean("sounds.enabled", true);
+    }
+
+    public String getCountdownSound() {
+        return config.getString("sounds.countdown", "BLOCK_NOTE_BLOCK_PLING");
+    }
+
+    public String getPiecePlaceSound() {
+        return config.getString("sounds.piece-place", "BLOCK_STONE_PLACE");
+    }
+
+    public String getWinSound() {
+        return config.getString("sounds.win", "ENTITY_PLAYER_LEVELUP");
+    }
+
+    public String getLoseSound() {
+        return config.getString("sounds.lose", "ENTITY_ENDERMAN_TELEPORT");
+    }
 }

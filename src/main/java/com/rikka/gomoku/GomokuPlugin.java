@@ -10,6 +10,7 @@ import com.rikka.gomoku.config.LanguageManager;
 import com.rikka.gomoku.game.GameManager;
 import com.rikka.gomoku.gui.GomokuGui;
 import com.rikka.gomoku.listener.GameListener;
+import com.rikka.gomoku.sound.SoundManager;
 import com.rikka.gomoku.spectator.SpectatorManager;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -24,6 +25,7 @@ public final class GomokuPlugin extends JavaPlugin {
     private GameManager gameManager;
     private ArenaManager arenaManager;
     private SpectatorManager spectatorManager;
+    private SoundManager soundManager;
     private GomokuGui gomokuGui;
 
     @Override
@@ -34,6 +36,7 @@ public final class GomokuPlugin extends JavaPlugin {
 
         this.gameManager = new GameManager(this);
         this.spectatorManager = new SpectatorManager(languageManager);
+        this.soundManager = new SoundManager(configManager);
         this.arenaManager = new ArenaManager(this, configManager, languageManager, gameManager);
         this.gomokuGui = new GomokuGui(this);
 
@@ -103,5 +106,6 @@ public final class GomokuPlugin extends JavaPlugin {
     public GameManager getGameManager() { return gameManager; }
     public ArenaManager getArenaManager() { return arenaManager; }
     public SpectatorManager getSpectatorManager() { return spectatorManager; }
+    public SoundManager getSoundManager() { return soundManager; }
     public GomokuGui getGomokuGui() { return gomokuGui; }
 }

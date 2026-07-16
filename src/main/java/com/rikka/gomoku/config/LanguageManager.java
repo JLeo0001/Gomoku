@@ -83,6 +83,9 @@ public class LanguageManager {
         String value = cfg.getString(key);
         if (value == null) return "Missing: " + key;
 
+        // Always expand {prefix} at the lowest level so every get() / format() / getList() path is covered
+        value = value.replace("{prefix}", get("prefix"));
+
         return ChatColor.translateAlternateColorCodes('&', value);
     }
 
@@ -125,6 +128,7 @@ public class LanguageManager {
 
         return raw.stream()
             .map(Object::toString)
+            .map(s -> s.replace("{prefix}", get("prefix")))
             .map(s -> ChatColor.translateAlternateColorCodes('&', s))
             .map(s -> {
                 if (replacements != null) {
