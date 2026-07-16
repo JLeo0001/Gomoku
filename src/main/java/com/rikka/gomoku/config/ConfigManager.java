@@ -31,9 +31,9 @@ public class ConfigManager {
     }
 
     public Material getGridBlock() {
-        String name = config.getString("board.grid-block", "STONE_BRICKS");
+        String name = config.getString("board.grid-block", "DARK_OAK_PLANKS");
         Material mat = Material.matchMaterial(name);
-        return mat != null ? mat : Material.STONE_BRICKS;
+        return mat != null ? mat : Material.DARK_OAK_PLANKS;
     }
 
     public int getLobbyCountdown() {

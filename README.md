@@ -76,7 +76,7 @@ board:
   size: 19                     # 棋盘大小（9-25）
   y-level: 64                  # 棋盘 Y 坐标
   surface-block: SMOOTH_STONE  # 棋盘表面方块
-  grid-block: STONE_BRICKS     # 棋盘边框方块
+  grid-block: DARK_OAK_PLANKS # 棋盘边框方块
 
 timing:
   lobby-countdown: 30          # 大厅倒计时（秒）

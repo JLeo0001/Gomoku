@@ -7,7 +7,7 @@ board:
   size: 19                     # Board size (e.g., 15 or 19)
   y-level: 64                  # Y coordinate for the board surface
   surface-block: SMOOTH_STONE  # Block used for the board surface
-  grid-block: STONE_BRICKS     # Block used for grid lines / border
+  grid-block: DARK_OAK_PLANKS # Block used for grid lines / border
 
 # Timing (in seconds)
 timing:
