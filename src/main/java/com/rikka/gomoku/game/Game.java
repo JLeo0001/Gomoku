@@ -138,7 +138,14 @@ public class Game {
 
     private void beginGame() {
         state = GameState.PLAYING;
-        renderer.renderBoard(arena.getBoardOrigin(), board.getSize());
+
+        // ── Fully reset board (in-memory + world) before new game ──
+        board.clear();
+        Location origin = arena.getBoardOrigin();
+        if (origin != null) {
+            renderer.clearPieces(origin, board.getSize());
+            renderer.renderBoard(origin, board.getSize());
+        }
 
         // Randomly assign colors: player1/player2 get WHITE or BLACK; stable for the game.
         Random rng = new Random();
