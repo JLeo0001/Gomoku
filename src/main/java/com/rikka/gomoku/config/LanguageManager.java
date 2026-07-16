@@ -83,8 +83,11 @@ public class LanguageManager {
         String value = cfg.getString(key);
         if (value == null) return "Missing: " + key;
 
-        // Always expand {prefix} at the lowest level so every get() / format() / getList() path is covered
-        value = value.replace("{prefix}", get("prefix"));
+        // Always expand {prefix} at the lowest level so every get() / format() / getList() path is covered.
+        // Skip for the prefix key itself to avoid infinite recursion.
+        if (!"prefix".equals(key)) {
+            value = value.replace("{prefix}", get("prefix"));
+        }
 
         return ChatColor.translateAlternateColorCodes('&', value);
     }
