@@ -123,7 +123,7 @@ public class GomokuCommand implements CommandExecutor, TabCompleter {
         if (game != null) {
             game.playerLeave(player);
             return true;
-        }
+        } else if (spectatorManager.isSpectating(player)) {
             spectatorManager.removeSpectator(player);
         } else {
             player.sendMessage(lang.format("not-in-game", Map.of()));
