@@ -27,13 +27,13 @@ public class ConfigManager {
     public Material getSurfaceBlock() {
         String name = config.getString("board.surface-block", "OAK_PLANKS");
         Material mat = Material.matchMaterial(name);
-        return mat != null ? mat : Material.OAK_PLANKS;
+        return mat != null ? mat : Material.SMOOTH_STONE;
     }
 
     public Material getGridBlock() {
-        String name = config.getString("board.grid-block", "DARK_OAK_PLANKS");
+        String name = config.getString("board.grid-block", "STONE_BRICKS");
         Material mat = Material.matchMaterial(name);
-        return mat != null ? mat : Material.DARK_OAK_PLANKS;
+        return mat != null ? mat : Material.STONE_BRICKS;
     }
 
     public int getLobbyCountdown() {
