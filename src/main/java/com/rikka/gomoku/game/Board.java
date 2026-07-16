@@ -36,11 +36,15 @@ public class Board {
 
     /**
      * Remove a piece (for undo during AI search).
+     * Resets lastRow/lastCol to -1 so stale values never leak into
+     * win checks across search branches.
      */
     public void undo(int row, int col) {
         if (row >= 0 && row < size && col >= 0 && col < size) {
             grid[row][col] = EMPTY;
         }
+        lastRow = -1;
+        lastCol = -1;
     }
 
     /**
@@ -72,6 +76,33 @@ public class Board {
             if (count >= 5) return true;
         }
         return false;
+    }
+
+    /**
+     * Full-board scan: returns the player (WHITE or BLACK) if there is
+     * a five-in-a-row anywhere, or 0 if none.  Used as a defensive
+     * double-check after every move.
+     */
+    public int findWinner() {
+        int[][] dirs = {{0, 1}, {1, 0}, {1, 1}, {1, -1}};
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                int player = grid[r][c];
+                if (player == EMPTY) continue;
+                for (int[] dir : dirs) {
+                    // Only check forward to avoid double-counting
+                    int count = 1;
+                    for (int i = 1; i < 5; i++) {
+                        int nr = r + dir[0] * i;
+                        int nc = c + dir[1] * i;
+                        if (nr >= 0 && nr < size && nc >= 0 && nc < size && grid[nr][nc] == player) count++;
+                        else break;
+                    }
+                    if (count >= 5) return player;
+                }
+            }
+        }
+        return 0;
     }
 
     public int getLastRow() { return lastRow; }

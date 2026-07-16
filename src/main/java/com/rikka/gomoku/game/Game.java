@@ -236,11 +236,13 @@ public class Game {
         Player p1 = Bukkit.getPlayer(player1);
         if (p1 != null) p1.sendMessage(lang.format("ai-thinking", Map.of()));
         final int aiColor = player2Color;
+        // Clone the board so AI search cannot corrupt the live game state.
+        final Board searchBoard = board.copy();
         new BukkitRunnable() {
             @Override public void run() {
                 aiThinking = false;
                 if (state != GameState.PLAYING) return;
-                int[] move = ai.findBestMove(board, aiColor);
+                int[] move = ai.findBestMove(searchBoard, aiColor);
                 board.place(move[0], move[1], aiColor);
                 moveHistory.add(new Move(move[0], move[1], aiColor));
                 renderer.placePiece(arena.getBoardOrigin(), move[0], move[1], aiColor);
@@ -288,13 +290,16 @@ public class Game {
         cancelAllTasks();
 
         String winnerName = null;
+        UUID loserId = null;
         if (winner == player1Color) {
             Player p = Bukkit.getPlayer(player1);
             winnerName = (p != null) ? p.getName() : "White";
+            loserId = isPvE ? null : player2;
         } else if (winner == player2Color) {
             winnerName = isPvE ? "AI"
                 : (player2 != null && Bukkit.getPlayer(player2) != null
                     ? Bukkit.getPlayer(player2).getName() : "Black");
+            loserId = isPvE ? player1 : player1;
         }
 
         String msg = winnerName != null
@@ -302,6 +307,14 @@ public class Game {
             : lang.format("draw", Map.of());
         broadcastToPlayers(msg);
         spectatorManager.broadcastToArenaSpectators(arena.getId(), msg);
+
+        // Notify loser
+        if (loserId != null) {
+            Player loser = Bukkit.getPlayer(loserId);
+            if (loser != null && loser.isOnline()) {
+                loser.sendMessage(lang.format("lose", Map.of()));
+            }
+        }
 
         new BukkitRunnable() {
             @Override public void run() {
