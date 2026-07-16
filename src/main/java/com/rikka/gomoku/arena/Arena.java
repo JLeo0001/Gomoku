@@ -94,17 +94,17 @@ public class Arena {
         // Board: (0, y, 0) → (size-1, y, size-1)
         this.boardOrigin = new Location(world, 0, yLevel, 0);
 
-        // Lobby: 5 blocks south of board center
-        this.lobbySpawn = new Location(world, half + 0.5, yLevel + 1, -4.5);
+        // Lobby: on the stone brick platform north of board
+        this.lobbySpawn = new Location(world, half + 0.5, yLevel + 1, size + 5.5);
 
-        // Player1 (White): west side
-        this.player1Spawn = new Location(world, -2.5, yLevel + 1, half + 0.5);
+        // Player1 (White): on the west-side slab platform
+        this.player1Spawn = new Location(world, -3.5, yLevel + 1, half + 0.5);
 
-        // Player2 (Black): east side
-        this.player2Spawn = new Location(world, size + 1.5, yLevel + 1, half + 0.5);
+        // Player2 (Black): on the east-side slab platform
+        this.player2Spawn = new Location(world, size + 2.5, yLevel + 1, half + 0.5);
 
-        // Spectator: elevated center
-        this.spectatorSpawn = new Location(world, half + 0.5, yLevel + 10, half + 0.5);
+        // Spectator: 1 block above glass deck center
+        this.spectatorSpawn = new Location(world, half + 0.5, yLevel + 9, half + 0.5);
     }
 
     public boolean isReady() {

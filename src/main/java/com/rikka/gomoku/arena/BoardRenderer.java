@@ -105,18 +105,16 @@ public class BoardRenderer {
 
     private void renderLobby(int boardSize, int y, World world) {
         int half = boardSize / 2;
-        int lx = half - 2; // center ~3 wide
-        int lz = boardSize + 3;
 
-        // 5×3 platform
+        // 5×3 platform centered behind the board (north side)
         for (int x = -2; x <= 2; x++) {
-            for (int z = 2; z <= 4; z++) {
-                world.getBlockAt(lx + x, y, lz + z).setType(LOBBY_FLOOR);
+            for (int z = 0; z <= 2; z++) {
+                world.getBlockAt(half + x, y, boardSize + 4 + z).setType(LOBBY_FLOOR);
             }
         }
 
-        // Spawn point marker (center)
-        world.getBlockAt(lx, y + 1, lz + 3).setType(Material.BEACON);
+        // Beacon marker at center
+        world.getBlockAt(half, y + 1, boardSize + 5).setType(Material.BEACON);
     }
 
     // ═══════════════════════════════════════════════════════════════
