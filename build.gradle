@@ -9,12 +9,10 @@ version = '1.2.0'
 repositories {
     mavenCentral()
     maven { url = 'https://repo.papermc.io/repository/maven-public/' }
-    maven { url = 'https://repo.onarandombox.com/content/groups/multiverse/' }
 }
 
 dependencies {
     compileOnly 'io.papermc.paper:paper-api:1.21.3-R0.1-SNAPSHOT'
-    compileOnly 'com.onarandombox.multiversecore:Multiverse-Core:4.3.1'
 }
 
 java {
