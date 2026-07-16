@@ -139,8 +139,7 @@ public class GomokuAdminCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleReload(CommandSender sender) {
-        plugin.getConfigManager().reload();
-        plugin.getLanguageManager().reload();
+        plugin.fullReload();
         sender.sendMessage(lang.format("config-reloaded", Map.of()));
         return true;
     }

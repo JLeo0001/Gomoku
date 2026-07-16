@@ -4,21 +4,21 @@ import com.rikka.gomoku.game.Game;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import java.util.UUID;
-
 /**
  * Represents a physical arena where a Gomoku game takes place.
+ * Board and all spawn points are auto-generated from config.
  */
 public class Arena {
     private final String id;
     private World world;
     private ArenaState state = ArenaState.IDLE;
 
-    // Corner locations of the board (two opposite corners)
-    private Location boardCorner1;
-    private Location boardCorner2;
+    // Board origin (min corner) — auto-calculated
+    private Location boardOrigin;
+    private int boardSize;
+    private int boardY;
 
-    // Spawn points
+    // Auto-generated spawn points
     private Location lobbySpawn;
     private Location player1Spawn;
     private Location player2Spawn;
@@ -39,11 +39,23 @@ public class Arena {
     public ArenaState getState() { return state; }
     public void setState(ArenaState state) { this.state = state; }
 
-    public Location getBoardCorner1() { return boardCorner1; }
-    public void setBoardCorner1(Location loc) { this.boardCorner1 = loc; }
+    // ─── Board corner compat (for old API) ────────────────────────
 
-    public Location getBoardCorner2() { return boardCorner2; }
-    public void setBoardCorner2(Location loc) { this.boardCorner2 = loc; }
+    public Location getBoardCorner1() { return boardOrigin; }
+    public void setBoardCorner1(Location loc) { this.boardOrigin = loc; }
+
+    public Location getBoardCorner2() {
+        if (boardOrigin == null) return null;
+        return new Location(world,
+            boardOrigin.getBlockX() + boardSize - 1,
+            boardOrigin.getBlockY(),
+            boardOrigin.getBlockZ() + boardSize - 1);
+    }
+    public void setBoardCorner2(Location loc) { /* no-op, auto-generated */ }
+
+    public Location getBoardOrigin() { return boardOrigin; }
+
+    // ─── Spawn points ─────────────────────────────────────────────
 
     public Location getLobbySpawn() { return lobbySpawn; }
     public void setLobbySpawn(Location loc) { this.lobbySpawn = loc; }
@@ -63,24 +75,39 @@ public class Arena {
     public Game getCurrentGame() { return currentGame; }
     public void setCurrentGame(Game game) { this.currentGame = game; }
 
-    public boolean isReady() {
-        return world != null
-            && boardCorner1 != null
-            && boardCorner2 != null
-            && lobbySpawn != null
-            && player1Spawn != null
-            && player2Spawn != null
-            && spectatorSpawn != null;
-    }
+    public int getBoardSize() { return boardSize; }
+
+    // ─── Auto-generation ──────────────────────────────────────────
 
     /**
-     * Get the origin (min x, min z) of the board.
+     * Auto-generate all positions from board size and Y level.
+     * Board spans from (0, y, 0) to (size-1, y, size-1).
+     * Call this after world is created and every reload.
      */
-    public Location getBoardOrigin() {
-        if (boardCorner1 == null || boardCorner2 == null) return null;
-        double minX = Math.min(boardCorner1.getX(), boardCorner2.getX());
-        double minZ = Math.min(boardCorner1.getZ(), boardCorner2.getZ());
-        double y = boardCorner1.getY();
-        return new Location(world, minX, y, minZ);
+    public void autoGeneratePositions(int size, int yLevel) {
+        if (world == null) return;
+        this.boardSize = size;
+        this.boardY = yLevel;
+
+        int half = size / 2;
+
+        // Board: (0, y, 0) → (size-1, y, size-1)
+        this.boardOrigin = new Location(world, 0, yLevel, 0);
+
+        // Lobby: 5 blocks south of board center
+        this.lobbySpawn = new Location(world, half + 0.5, yLevel + 1, -4.5);
+
+        // Player1 (White): west side
+        this.player1Spawn = new Location(world, -2.5, yLevel + 1, half + 0.5);
+
+        // Player2 (Black): east side
+        this.player2Spawn = new Location(world, size + 1.5, yLevel + 1, half + 0.5);
+
+        // Spectator: elevated center
+        this.spectatorSpawn = new Location(world, half + 0.5, yLevel + 10, half + 0.5);
+    }
+
+    public boolean isReady() {
+        return world != null && boardOrigin != null;
     }
 }

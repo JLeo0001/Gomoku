@@ -1,6 +1,8 @@
 package com.rikka.gomoku;
 
+import com.rikka.gomoku.arena.Arena;
 import com.rikka.gomoku.arena.ArenaManager;
+import com.rikka.gomoku.arena.BoardRenderer;
 import com.rikka.gomoku.command.GomokuAdminCommand;
 import com.rikka.gomoku.command.GomokuCommand;
 import com.rikka.gomoku.config.ConfigManager;
@@ -8,21 +10,12 @@ import com.rikka.gomoku.config.LanguageManager;
 import com.rikka.gomoku.game.GameManager;
 import com.rikka.gomoku.listener.GameListener;
 import com.rikka.gomoku.spectator.SpectatorManager;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
 
-/**
- * Main plugin class for Gomoku (五子棋) - a Minecraft minigame plugin for Purpur.
- * <p>
- * Features:
- * - PvP and PvE (AI) Gomoku gameplay
- * - 19x19 configurable board with skeleton/wither skull pieces
- * - Multi-arena system with independent worlds
- * - Spectator system with chat isolation
- * - Full inventory/state protection
- * - Multi-language support (zh_CN, en_US)
- */
 public final class GomokuPlugin extends JavaPlugin {
 
     private ConfigManager configManager;
@@ -33,46 +26,73 @@ public final class GomokuPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // Initialize config and language
         saveDefaultConfig();
         this.configManager = new ConfigManager(this);
         this.languageManager = new LanguageManager(this);
 
-        // Initialize managers
         this.gameManager = new GameManager(this);
         this.spectatorManager = new SpectatorManager(languageManager);
         this.arenaManager = new ArenaManager(this, configManager, languageManager, gameManager);
 
-        // Register commands
+        // Re-detect existing arena worlds and regenerate boards
+        recoverExistingArenas();
+
         Objects.requireNonNull(getCommand("gomoku")).setExecutor(new GomokuCommand(this));
         Objects.requireNonNull(getCommand("gomokuadmin")).setExecutor(new GomokuAdminCommand(this));
 
-        // Register listener
         getServer().getPluginManager().registerEvents(new GameListener(this), this);
 
         getLogger().info("========================================");
         getLogger().info("  Gomoku v" + getDescription().getVersion());
-        getLogger().info("  Board size: " + configManager.getBoardSize() + "x" + configManager.getBoardSize());
+        getLogger().info("  Board: " + configManager.getBoardSize() + "×" + configManager.getBoardSize()
+            + "  Y=" + configManager.getBoardY());
         getLogger().info("  Arenas: " + arenaManager.getArenaMap().size());
         getLogger().info("========================================");
     }
 
-    @Override
-    public void onDisable() {
-        // Clean up all games
-        if (gameManager != null) {
-            gameManager.endAllGames();
-        }
+    /**
+     * Scan for existing arena worlds and re-register them.
+     * Regenerates the board for each based on current config.
+     */
+    private void recoverExistingArenas() {
+        String prefix = configManager.getWorldPrefix();
+        int size = configManager.getBoardSize();
+        int y = configManager.getBoardY();
+        BoardRenderer renderer = new BoardRenderer(configManager.getSurfaceBlock(), configManager.getGridBlock());
 
-        // Clear spectators
-        if (spectatorManager != null) {
-            spectatorManager.clearAll();
-        }
+        for (World world : Bukkit.getWorlds()) {
+            String name = world.getName();
+            if (name.startsWith(prefix)) {
+                String arenaId = name.substring(prefix.length());
+                if (arenaManager.getArena(arenaId) != null) continue; // already registered
 
-        getLogger().info("Gomoku disabled. All games cleaned up.");
+                Arena arena = new Arena(arenaId);
+                arena.setWorld(world);
+                arena.setMaxSpectators(configManager.getMaxSpectators());
+                arena.autoGeneratePositions(size, y);
+                arenaManager.getArenaMap().put(arenaId, arena);
+
+                renderer.renderFullBoard(arena.getBoardOrigin(), size);
+                getLogger().info("Recovered arena '" + arenaId + "' from world '" + name + "'");
+            }
+        }
     }
 
-    // ─── Getters ──────────────────────────────────────────────────
+    /**
+     * Full reload: config, language, and regenerate all arena boards.
+     */
+    public void fullReload() {
+        configManager.reload();
+        languageManager.reload();
+        arenaManager.regenerateAllBoards();
+    }
+
+    @Override
+    public void onDisable() {
+        if (gameManager != null) gameManager.endAllGames();
+        if (spectatorManager != null) spectatorManager.clearAll();
+        getLogger().info("Gomoku disabled.");
+    }
 
     public ConfigManager getConfigManager() { return configManager; }
     public LanguageManager getLanguageManager() { return languageManager; }

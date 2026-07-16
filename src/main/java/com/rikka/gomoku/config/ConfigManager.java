@@ -52,6 +52,10 @@ public class ConfigManager {
         return Math.max(0, config.getInt("spectator.max-per-arena", 10));
     }
 
+    public int getBoardY() {
+        return Math.max(4, Math.min(255, config.getInt("board.y-level", 64)));
+    }
+
     public boolean isMultiverseEnabled() {
         return config.getBoolean("multiverse.enabled", true);
     }
