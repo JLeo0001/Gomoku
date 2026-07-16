@@ -7,6 +7,7 @@ import com.rikka.gomoku.game.Game;
 import com.rikka.gomoku.game.GameManager;
 import com.rikka.gomoku.game.GameState;
 import com.rikka.gomoku.spectator.SpectatorManager;
+import java.util.UUID;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
