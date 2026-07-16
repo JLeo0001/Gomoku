@@ -2,7 +2,8 @@ package com.rikka.gomoku.ai;
 
 import com.rikka.gomoku.game.Board;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * AI opponent for Gomoku with iterative deepening, pattern-based evaluation,
@@ -27,7 +28,6 @@ public class GomokuAI {
     private static final int MAX_DEPTH = 6;
     private static final int CANDIDATE_LIMIT = 25;
 
-    private final Random random = new Random();
     private int nodesSearched;
 
     // ─── Public API ───────────────────────────────────────────────

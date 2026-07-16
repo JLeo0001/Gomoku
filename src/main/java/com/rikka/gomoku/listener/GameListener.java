@@ -176,10 +176,18 @@ public class GameListener implements Listener {
 
             // If player left the arena world, treat as forfeit
             if (origin != null && !player.getWorld().equals(origin.getWorld())) {
-                game.forceEndWithWinner(
-                    game.getPlayer1() != null && game.getPlayer1().equals(player.getUniqueId())
-                        ? game.getPlayer2() : game.getPlayer1()
-                );
+                UUID player1 = game.getPlayer1();
+                UUID player2 = game.getPlayer2();
+                UUID winner;
+                UUID pid = player.getUniqueId();
+                if (pid.equals(player1)) {
+                    winner = player2; // may be null (PvE)
+                } else if (pid.equals(player2)) {
+                    winner = player1;
+                } else {
+                    winner = null;
+                }
+                game.forceEndWithWinner(winner);
             }
         }
     }

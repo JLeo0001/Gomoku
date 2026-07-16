@@ -85,6 +85,8 @@ public class LanguageManager {
 
     public String format(String key, Map<String, String> replacements) {
         String msg = get(key);
+        // Always expand {prefix} so callers never need to pass it
+        msg = msg.replace("{prefix}", get("prefix"));
         if (replacements != null) {
             for (Map.Entry<String, String> entry : replacements.entrySet()) {
                 msg = msg.replace("{" + entry.getKey() + "}", entry.getValue());

@@ -83,7 +83,7 @@ public class ArenaManager {
             renderer.clearAll(world, size, y);
 
             // Ensure solid ground under the arena (fix void worlds)
-            ensureGround(world, y);
+            ensureGround(world, size, y);
 
             arena.autoGeneratePositions(size, y);
             renderer.renderFullArena(size, y, world);
@@ -95,14 +95,15 @@ public class ArenaManager {
     /**
      * Fill stone from Y=-63 to Y=y-1 if the world is void.
      */
-    private void ensureGround(World world, int boardY) {
+    private void ensureGround(World world, int boardSize, int boardY) {
         // Check if there's ground at Y=boardY-1
         if (world.getBlockAt(0, boardY - 1, 0).getType() != Material.AIR) return;
 
-        // Fill with stone
+        int extent = boardSize + 10;
+        // Fill with stone from bedrock up to board surface
         for (int fy = -63; fy < boardY; fy++) {
-            for (int x = -10; x <= boardY + 10; x++) {
-                for (int z = -10; z <= boardY + 10; z++) {
+            for (int x = -10; x <= extent; x++) {
+                for (int z = -10; z <= extent; z++) {
                     world.getBlockAt(x, fy, z).setType(Material.STONE);
                 }
             }
@@ -214,6 +215,13 @@ public class ArenaManager {
 
     public Map<String, Arena> getArenaMap() {
         return Collections.unmodifiableMap(arenas);
+    }
+
+    /**
+     * Register an externally-created arena. Used during startup recovery.
+     */
+    public void registerArena(String id, Arena arena) {
+        arenas.put(id, arena);
     }
 
     public String getArenaStatus(Arena arena) {

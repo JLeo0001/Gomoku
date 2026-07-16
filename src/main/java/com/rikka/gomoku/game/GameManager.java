@@ -118,7 +118,18 @@ public class GameManager {
         UUID uuid = player.getUniqueId();
         Game game = getPlayerGame(uuid);
         if (game != null) {
-            game.forceEndWithWinner(game.getPlayer1().equals(uuid) ? game.getPlayer2() : game.getPlayer1());
+            // Determine the opponent as winner (or N/A if none)
+            UUID player1 = game.getPlayer1();
+            UUID player2 = game.getPlayer2();
+            UUID winner;
+            if (uuid.equals(player1)) {
+                winner = player2; // may be null (PvE / single-queue)
+            } else if (uuid.equals(player2)) {
+                winner = player1;
+            } else {
+                winner = null;
+            }
+            game.forceEndWithWinner(winner);
             restorePlayerData(player);
         } else {
             // Player might be in queue

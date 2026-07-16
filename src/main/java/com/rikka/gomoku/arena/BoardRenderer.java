@@ -5,8 +5,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.Directional;
 
 /**
  * Renders the Gomoku board and all arena structures in the Minecraft world.
@@ -37,13 +35,18 @@ public class BoardRenderer {
         int half = boardSize / 2;
         int margin = 8;
 
+        // Clear board surface + pieces
         for (int x = -margin; x <= boardSize + margin; x++) {
             for (int z = -margin; z <= boardSize + margin; z++) {
-                // Surface level
                 world.getBlockAt(x, yLevel, z).setType(Material.AIR);
-                // Piece level
                 world.getBlockAt(x, yLevel + 1, z).setType(Material.AIR);
-                // Spectator deck
+            }
+        }
+
+        // Clear spectator deck (5×5 glass floor + railings, centered at half,half)
+        int deckRadius = 3;
+        for (int x = -deckRadius; x <= deckRadius; x++) {
+            for (int z = -deckRadius; z <= deckRadius; z++) {
                 world.getBlockAt(half + x, yLevel + 8, half + z).setType(Material.AIR);
                 world.getBlockAt(half + x, yLevel + 9, half + z).setType(Material.AIR);
             }
@@ -176,10 +179,10 @@ public class BoardRenderer {
         int z = origin.getBlockZ() + row;
 
         Block pieceBlock = world.getBlockAt(x, y + 1, z);
-        pieceBlock.setType(player == Board.WHITE ? Material.SKELETON_SKULL : Material.WITHER_SKELETON_SKULL);
-        Directional dir = (Directional) pieceBlock.getBlockData();
-        dir.setFacing(BlockFace.UP);
-        pieceBlock.setBlockData(dir);
+        Material skullType = (player == Board.WHITE) ? Material.SKELETON_SKULL : Material.WITHER_SKELETON_SKULL;
+        pieceBlock.setType(skullType);
+        // Floor-standing skulls use Rotatable in 1.21+, not Directional.
+        // Default rotation (0 = south) is fine for pieces.
     }
 
     public void clearPieces(Location origin, int boardSize) {

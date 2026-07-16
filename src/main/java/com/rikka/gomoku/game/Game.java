@@ -461,9 +461,15 @@ public class Game {
             return;
         }
         state = GameState.ENDING;
-        Player winner = Bukkit.getPlayer(winnerId);
+        String winnerName;
+        if (winnerId == null) {
+            winnerName = isPvE ? "AI" : "?";
+        } else {
+            Player winner = Bukkit.getPlayer(winnerId);
+            winnerName = winner != null ? winner.getName() : "?";
+        }
         broadcastToPlayers(lang.format("win-by-forfeit",
-            Map.of("player", winner != null ? winner.getName() : "?")));
+            Map.of("player", winnerName)));
         restorePlayerNow(whitePlayerId);
         restorePlayerNow(blackPlayerId);
         new BukkitRunnable() {

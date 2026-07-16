@@ -70,7 +70,7 @@ public final class GomokuPlugin extends JavaPlugin {
                 arena.setWorld(world);
                 arena.setMaxSpectators(configManager.getMaxSpectators());
                 arena.autoGeneratePositions(size, y);
-                arenaManager.getArenaMap().put(arenaId, arena);
+                arenaManager.registerArena(arenaId, arena);
 
                 renderer.renderFullArena(size, y, world);
                 getLogger().info("Recovered arena '" + arenaId + "' from world '" + name + "'");
