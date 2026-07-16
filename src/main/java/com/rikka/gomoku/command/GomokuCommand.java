@@ -121,12 +121,9 @@ public class GomokuCommand implements CommandExecutor, TabCompleter {
     private boolean handleLeave(Player player) {
         Game game = gameManager.getPlayerGame(player.getUniqueId());
         if (game != null) {
-            game.forceEndWithWinner(
-                game.getPlayer1() != null && game.getPlayer1().equals(player.getUniqueId())
-                    ? game.getPlayer2() : game.getPlayer1()
-            );
-            player.sendMessage(lang.format("left-game", Map.of()));
-        } else if (spectatorManager.isSpectating(player)) {
+            game.playerLeave(player);
+            return true;
+        }
             spectatorManager.removeSpectator(player);
         } else {
             player.sendMessage(lang.format("not-in-game", Map.of()));

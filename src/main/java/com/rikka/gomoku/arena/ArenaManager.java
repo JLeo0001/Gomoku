@@ -68,6 +68,7 @@ public class ArenaManager {
 
     /**
      * Regenerate all arena boards. Called on reload.
+     * Clears existing blocks first, then rebuilds.
      */
     public void regenerateAllBoards() {
         int size = config.getBoardSize();
@@ -77,10 +78,36 @@ public class ArenaManager {
         for (Arena arena : arenas.values()) {
             if (arena.getState() == ArenaState.IN_USE) continue;
 
+            World world = arena.getWorld();
+            // Clear the entire arena area (board + structures)
+            renderer.clearAll(world, size, y);
+
+            // Ensure solid ground under the arena (fix void worlds)
+            ensureGround(world, y);
+
             arena.autoGeneratePositions(size, y);
-            renderer.renderFullArena(size, y, arena.getWorld());
+            renderer.renderFullArena(size, y, world);
+            world.setSpawnLocation(arena.getLobbySpawn());
             plugin.getLogger().info("Regenerated arena '" + arena.getId() + "'");
         }
+    }
+
+    /**
+     * Fill stone from Y=-63 to Y=y-1 if the world is void.
+     */
+    private void ensureGround(World world, int boardY) {
+        // Check if there's ground at Y=boardY-1
+        if (world.getBlockAt(0, boardY - 1, 0).getType() != Material.AIR) return;
+
+        // Fill with stone
+        for (int fy = -63; fy < boardY; fy++) {
+            for (int x = -10; x <= boardY + 10; x++) {
+                for (int z = -10; z <= boardY + 10; z++) {
+                    world.getBlockAt(x, fy, z).setType(Material.STONE);
+                }
+            }
+        }
+        plugin.getLogger().info("Filled ground under arena in world '" + world.getName() + "'");
     }
 
     private World createArenaWorld(String worldName) {

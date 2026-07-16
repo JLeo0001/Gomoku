@@ -31,6 +31,26 @@ public class BoardRenderer {
     // ═══════════════════════════════════════════════════════════════
 
     /**
+     * Clear all arena structures and pieces for regeneration.
+     */
+    public void clearAll(World world, int boardSize, int yLevel) {
+        int half = boardSize / 2;
+        int margin = 8;
+
+        for (int x = -margin; x <= boardSize + margin; x++) {
+            for (int z = -margin; z <= boardSize + margin; z++) {
+                // Surface level
+                world.getBlockAt(x, yLevel, z).setType(Material.AIR);
+                // Piece level
+                world.getBlockAt(x, yLevel + 1, z).setType(Material.AIR);
+                // Spectator deck
+                world.getBlockAt(half + x, yLevel + 8, half + z).setType(Material.AIR);
+                world.getBlockAt(half + x, yLevel + 9, half + z).setType(Material.AIR);
+            }
+        }
+    }
+
+    /**
      * Build everything: board + lobby platform + player platforms + spectator deck.
      */
     public void renderFullArena(int boardSize, int yLevel, World world) {
