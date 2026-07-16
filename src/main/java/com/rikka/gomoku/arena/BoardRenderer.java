@@ -9,77 +9,147 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
 
 /**
- * Renders the Gomoku board in the Minecraft world using blocks and skulls.
+ * Renders the Gomoku board and all arena structures in the Minecraft world.
  */
 public class BoardRenderer {
     private final Material surfaceBlock;
     private final Material gridBlock;
+
+    // Structure blocks
+    private static final Material LOBBY_FLOOR = Material.STONE_BRICKS;
+    private static final Material SPAWN_PAD = Material.SMOOTH_STONE_SLAB;
+    private static final Material SPECTATOR_FLOOR = Material.GLASS;
+    private static final Material RAILING = Material.GLASS_PANE;
 
     public BoardRenderer(Material surfaceBlock, Material gridBlock) {
         this.surfaceBlock = surfaceBlock;
         this.gridBlock = gridBlock;
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // Full arena build
+    // ═══════════════════════════════════════════════════════════════
+
     /**
-     * Render the full board with grid lines.
-     * Board surface = surfaceBlock, grid lines = gridBlock, intersections = surfaceBlock.
-     * @param origin the minimum-corner location of the board (0, y, 0)
-     * @param boardSize the size of the board (e.g., 19)
+     * Build everything: board + lobby platform + player platforms + spectator deck.
      */
+    public void renderFullArena(int boardSize, int yLevel, World world) {
+        Location origin = new Location(world, 0, yLevel, 0);
+        renderFullBoard(origin, boardSize);
+        renderLobby(boardSize, yLevel, world);
+        renderPlayerPlatforms(boardSize, yLevel, world);
+        renderSpectatorDeck(boardSize, yLevel, world);
+    }
+
+    /**
+     * Clear only pieces (skulls), keep structures intact.
+     */
+    public void clearPiecesOnly(Location origin, int boardSize) {
+        clearPieces(origin, boardSize);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Board
+    // ═══════════════════════════════════════════════════════════════
+
     public void renderFullBoard(Location origin, int boardSize) {
         if (origin == null) return;
         World world = origin.getWorld();
         int y = origin.getBlockY();
-        int startX = origin.getBlockX();
-        int startZ = origin.getBlockZ();
+        int sx = origin.getBlockX();
+        int sz = origin.getBlockZ();
 
-        // Build base platform (boardSize × boardSize)
+        // Surface
         for (int r = 0; r < boardSize; r++) {
             for (int c = 0; c < boardSize; c++) {
-                // Grid lines: every cell gets gridBlock, intersections get surfaceBlock
-                Block block = world.getBlockAt(startX + c, y, startZ + r);
-                block.setType(surfaceBlock);
+                world.getBlockAt(sx + c, y, sz + r).setType(surfaceBlock);
             }
         }
 
-        // Draw grid lines between intersections
-        if (gridBlock != surfaceBlock) {
-            for (int r = 0; r < boardSize; r++) {
-                for (int c = 0; c < boardSize; c++) {
-                    // Place grid line markers on edges between intersections
-                    // Horizontal lines (between columns)
-                    if (c < boardSize - 1) {
-                        Block hLine = world.getBlockAt(startX + c, y, startZ + r);
-                        // Alternate: every other row for subtle grid effect
-                    }
-                }
-            }
-        }
-
-        // Build a visible border around the board
+        // Border
         for (int i = -1; i <= boardSize; i++) {
-            // Top border
-            world.getBlockAt(startX + i, y, startZ - 1).setType(gridBlock);
-            // Bottom border
-            world.getBlockAt(startX + i, y, startZ + boardSize).setType(gridBlock);
-            // Left border
-            world.getBlockAt(startX - 1, y, startZ + i).setType(gridBlock);
-            // Right border
-            world.getBlockAt(startX + boardSize, y, startZ + i).setType(gridBlock);
+            world.getBlockAt(sx + i, y, sz - 1).setType(gridBlock);
+            world.getBlockAt(sx + i, y, sz + boardSize).setType(gridBlock);
+            world.getBlockAt(sx - 1, y, sz + i).setType(gridBlock);
+            world.getBlockAt(sx + boardSize, y, sz + i).setType(gridBlock);
         }
     }
 
-    /**
-     * Simple board rendering — just the surface (used by Game during cleanup).
-     */
     public void renderBoard(Location origin, int boardSize) {
         renderFullBoard(origin, boardSize);
     }
 
-    /**
-     * Place a piece on the board.
-     * White = SKELETON_SKULL, Black = WITHER_SKELETON_SKULL
-     */
+    // ═══════════════════════════════════════════════════════════════
+    // Lobby / waiting area (south of board)
+    // ═══════════════════════════════════════════════════════════════
+
+    private void renderLobby(int boardSize, int y, World world) {
+        int half = boardSize / 2;
+        int lx = half - 2; // center ~3 wide
+        int lz = boardSize + 3;
+
+        // 5×3 platform
+        for (int x = -2; x <= 2; x++) {
+            for (int z = 2; z <= 4; z++) {
+                world.getBlockAt(lx + x, y, lz + z).setType(LOBBY_FLOOR);
+            }
+        }
+
+        // Spawn point marker (center)
+        world.getBlockAt(lx, y + 1, lz + 3).setType(Material.BEACON);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Player spawn platforms (west & east of board)
+    // ═══════════════════════════════════════════════════════════════
+
+    private void renderPlayerPlatforms(int boardSize, int y, World world) {
+        int half = boardSize / 2;
+
+        // White player platform (west side)
+        int wx = -4;
+        for (int z = -1; z <= 1; z++) {
+            world.getBlockAt(wx, y, half + z).setType(SPAWN_PAD);
+        }
+
+        // Black player platform (east side)
+        int bx = boardSize + 3;
+        for (int z = -1; z <= 1; z++) {
+            world.getBlockAt(bx, y, half + z).setType(SPAWN_PAD);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Spectator deck (elevated glass platform above board center)
+    // ═══════════════════════════════════════════════════════════════
+
+    private void renderSpectatorDeck(int boardSize, int y, World world) {
+        int half = boardSize / 2;
+        int dy = y + 8; // platform Y
+        int radius = 3;
+
+        // Glass floor (5×5)
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                world.getBlockAt(half + x, dy, half + z).setType(SPECTATOR_FLOOR);
+            }
+        }
+
+        // Glass railing around the edge
+        for (int x = -radius; x <= radius; x++) {
+            world.getBlockAt(half + x, dy + 1, half - radius).setType(RAILING);
+            world.getBlockAt(half + x, dy + 1, half + radius).setType(RAILING);
+        }
+        for (int z = -radius; z <= radius; z++) {
+            world.getBlockAt(half - radius, dy + 1, half + z).setType(RAILING);
+            world.getBlockAt(half + radius, dy + 1, half + z).setType(RAILING);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Pieces
+    // ═══════════════════════════════════════════════════════════════
+
     public void placePiece(Location origin, int row, int col, int player) {
         if (origin == null) return;
         World world = origin.getWorld();
@@ -88,29 +158,22 @@ public class BoardRenderer {
         int z = origin.getBlockZ() + row;
 
         Block pieceBlock = world.getBlockAt(x, y + 1, z);
-        if (player == Board.WHITE) {
-            pieceBlock.setType(Material.SKELETON_SKULL);
-        } else {
-            pieceBlock.setType(Material.WITHER_SKELETON_SKULL);
-        }
+        pieceBlock.setType(player == Board.WHITE ? Material.SKELETON_SKULL : Material.WITHER_SKELETON_SKULL);
         Directional dir = (Directional) pieceBlock.getBlockData();
         dir.setFacing(BlockFace.UP);
         pieceBlock.setBlockData(dir);
     }
 
-    /**
-     * Clear all pieces from the board.
-     */
     public void clearPieces(Location origin, int boardSize) {
         if (origin == null) return;
         World world = origin.getWorld();
         int y = origin.getBlockY();
-        int startX = origin.getBlockX();
-        int startZ = origin.getBlockZ();
+        int sx = origin.getBlockX();
+        int sz = origin.getBlockZ();
 
         for (int r = 0; r < boardSize; r++) {
             for (int c = 0; c < boardSize; c++) {
-                Block above = world.getBlockAt(startX + c, y + 1, startZ + r);
+                Block above = world.getBlockAt(sx + c, y + 1, sz + r);
                 Material type = above.getType();
                 if (type == Material.SKELETON_SKULL || type == Material.WITHER_SKELETON_SKULL) {
                     above.setType(Material.AIR);
@@ -119,9 +182,10 @@ public class BoardRenderer {
         }
     }
 
-    /**
-     * Get board coordinates (row, col) from a clicked block location.
-     */
+    // ═══════════════════════════════════════════════════════════════
+    // Interaction
+    // ═══════════════════════════════════════════════════════════════
+
     public int[] getBoardCoords(Location origin, int boardSize, Location clicked) {
         if (origin == null || clicked == null) return null;
         if (!clicked.getWorld().equals(origin.getWorld())) return null;

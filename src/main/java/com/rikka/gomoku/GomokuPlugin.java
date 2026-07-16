@@ -72,7 +72,7 @@ public final class GomokuPlugin extends JavaPlugin {
                 arena.autoGeneratePositions(size, y);
                 arenaManager.getArenaMap().put(arenaId, arena);
 
-                renderer.renderFullBoard(arena.getBoardOrigin(), size);
+                renderer.renderFullArena(size, y, world);
                 getLogger().info("Recovered arena '" + arenaId + "' from world '" + name + "'");
             }
         }

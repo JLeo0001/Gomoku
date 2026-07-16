@@ -53,9 +53,9 @@ public class ArenaManager {
         arena.autoGeneratePositions(config.getBoardSize(), config.getBoardY());
         arenas.put(id, arena);
 
-        // Render the initial board
+        // Render the entire arena (board + lobby + spawn pads + spectator deck)
         BoardRenderer renderer = new BoardRenderer(config.getSurfaceBlock(), config.getGridBlock());
-        renderer.renderFullBoard(arena.getBoardOrigin(), config.getBoardSize());
+        renderer.renderFullArena(config.getBoardSize(), config.getBoardY(), world);
 
         if (creator != null) creator.sendMessage(lang.format("arena-created", Map.of("arena", id)));
         plugin.getLogger().info("Arena '" + id + "' created — board " + config.getBoardSize()
@@ -72,11 +72,11 @@ public class ArenaManager {
         BoardRenderer renderer = new BoardRenderer(config.getSurfaceBlock(), config.getGridBlock());
 
         for (Arena arena : arenas.values()) {
-            if (arena.getState() == ArenaState.IN_USE) continue; // skip active games
+            if (arena.getState() == ArenaState.IN_USE) continue;
 
             arena.autoGeneratePositions(size, y);
-            renderer.renderFullBoard(arena.getBoardOrigin(), size);
-            plugin.getLogger().info("Regenerated board for arena '" + arena.getId() + "'");
+            renderer.renderFullArena(size, y, arena.getWorld());
+            plugin.getLogger().info("Regenerated arena '" + arena.getId() + "'");
         }
     }
 
