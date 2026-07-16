@@ -73,15 +73,27 @@ public class GomokuAI {
         orderMoves(board, candidates, player, opponent);
 
         int[] bestMove = candidates.get(0);
-        int bestScore = Integer.MIN_VALUE;
+        int bestScore = Integer.MIN_VALUE + 1; // avoid overflow when negating
 
         for (int depth = 2; depth <= MAX_DEPTH; depth += 2) {
-            int currentBest = Integer.MIN_VALUE;
+            // Avoid Integer.MIN_VALUE which overflows on negation (-MIN_VALUE == MIN_VALUE)
+            int currentBest = Integer.MIN_VALUE + 1;
             int[] currentBestMove = candidates.get(0);
+
+            boolean first = true;
+            int alphaBound = -(FIVE * 10); // very negative, effectively -Inf
 
             for (int[] move : candidates) {
                 board.place(move[0], move[1], player);
-                int score = -negamax(board, depth - 1, -FIVE * 10, -currentBest, opponent, player);
+                // For the first candidate, search with full window;
+                // subsequent candidates use the narrowed beta = -currentBest
+                int score;
+                if (first) {
+                    score = -negamax(board, depth - 1, alphaBound, Integer.MAX_VALUE, opponent, player);
+                    first = false;
+                } else {
+                    score = -negamax(board, depth - 1, alphaBound, -currentBest, opponent, player);
+                }
                 board.undo(move[0], move[1]);
 
                 if (score > currentBest) {
