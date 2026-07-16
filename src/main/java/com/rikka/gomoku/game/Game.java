@@ -17,6 +17,16 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
 
+/**
+ * Core game state machine.
+ *
+ * Design:
+ *  - whitePlayerId / blackPlayerId: who plays each color.
+ *    null means AI (PvE); non-null means a human UUID.
+ *  - currentPlayerColor: WHITE or BLACK.  Always valid.
+ *  - advanceTurn(): the single place that flips colour and starts the next turn.
+ *  - AI computation runs ASYNC; only the result-apply step touches the main thread.
+ */
 public class Game {
     private final GomokuPlugin plugin;
     private final Arena arena;
@@ -28,24 +38,26 @@ public class Game {
     private final Board board;
     private GameState state = GameState.WAITING;
 
-    private UUID player1;
-    private UUID player2;
+    // ── Player slots (direct colour assignment) ───────────────────
+    private UUID whitePlayerId;   // null = AI
+    private UUID blackPlayerId;   // null = AI
+
     private boolean isPvE;
 
-    // Per-game color assignment (randomized, stable for the game)
-    private int player1Color = Board.WHITE;
-    private int player2Color = Board.BLACK;
-
-    private int currentPlayer = Board.WHITE;
+    // ── Turn state ────────────────────────────────────────────────
+    private int currentPlayerColor = Board.BLACK; // black always moves first
+    private boolean aiThinking;
     private final List<Move> moveHistory = new ArrayList<>();
     private final List<UUID> queuedPlayers = new ArrayList<>();
 
+    // ── Timers ────────────────────────────────────────────────────
     private BukkitTask turnTimer;
     private BukkitTask countdownTask;
     private BukkitTask gameDurationTask;
     private int turnSecondsLeft;
+
+    // ── AI ────────────────────────────────────────────────────────
     private final GomokuAI ai = new GomokuAI();
-    private boolean aiThinking = false;
 
     public Game(GomokuPlugin plugin, Arena arena) {
         this.plugin = plugin;
@@ -57,44 +69,60 @@ public class Game {
         this.board = new Board(config.getBoardSize());
     }
 
-    // ═══ Player Management ══════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    // Player Management
+    // ═══════════════════════════════════════════════════════════════
 
+    /** PvP: add a player to the queue. */
     public void addPlayer(Player player) {
         if (queuedPlayers.contains(player.getUniqueId())) return;
         queuedPlayers.add(player.getUniqueId());
+        plugin.getGameManager().savePlayerData(player, player.getLocation());
+        player.teleport(arena.getLobbySpawn());
 
         if (queuedPlayers.size() == 1) {
-            player1 = player.getUniqueId();
-            plugin.getGameManager().savePlayerData(player, player.getLocation());
-            player.teleport(arena.getLobbySpawn());
-            if (!isPvE) player.sendMessage(lang.format("joined-pvp", Map.of()));
+            whitePlayerId = player.getUniqueId();
+            player.sendMessage(lang.format("joined-pvp", Map.of()));
         } else if (queuedPlayers.size() == 2) {
-            player2 = player.getUniqueId();
-            plugin.getGameManager().savePlayerData(player, player.getLocation());
-            player.teleport(arena.getLobbySpawn());
+            blackPlayerId = player.getUniqueId();
+            // Randomize colour assignment
+            if (new Random().nextBoolean()) {
+                UUID tmp = whitePlayerId;
+                whitePlayerId = blackPlayerId;
+                blackPlayerId = tmp;
+            }
             startCountdown();
         }
     }
 
+    /** PvE: start immediately with AI. */
     public void startPvE(Player player) {
         this.isPvE = true;
-        player1 = player.getUniqueId();
-        player2 = null;
+        // Randomize which colour the human gets
+        if (new Random().nextBoolean()) {
+            whitePlayerId = player.getUniqueId();
+            blackPlayerId = null; // AI
+        } else {
+            whitePlayerId = null; // AI
+            blackPlayerId = player.getUniqueId();
+        }
         plugin.getGameManager().savePlayerData(player, player.getLocation());
         player.teleport(arena.getLobbySpawn());
         queuedPlayers.add(player.getUniqueId());
         startCountdown();
     }
 
-    // ═══ Player Leave (handles ALL states) ══════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    // Player Leave (handles ALL states)
+    // ═══════════════════════════════════════════════════════════════
 
     public void playerLeave(Player player) {
         UUID uuid = player.getUniqueId();
-        cancelAllTasks();
+        cancelAllTimers();
 
         if (state == GameState.WAITING || state == GameState.COUNTDOWN) {
             restorePlayerNow(uuid);
-            UUID other = uuid.equals(player1) ? player2 : player1;
+            UUID other = uuid.equals(whitePlayerId) ? blackPlayerId : whitePlayerId;
             if (other != null) restorePlayerNow(other);
             fullCleanup();
             return;
@@ -103,9 +131,14 @@ public class Game {
         // PLAYING → forfeit
         if (state == GameState.PLAYING) {
             state = GameState.ENDING;
-            UUID other = uuid.equals(player1) ? player2 : player1;
-            String winnerName = isPvE ? "AI" : (other != null && Bukkit.getPlayer(other) != null
-                ? Bukkit.getPlayer(other).getName() : "?");
+            UUID other = uuid.equals(whitePlayerId) ? blackPlayerId : whitePlayerId;
+            String winnerName;
+            if (other == null) {
+                winnerName = "AI";
+            } else {
+                Player wp = Bukkit.getPlayer(other);
+                winnerName = (wp != null) ? wp.getName() : "?";
+            }
             broadcastToPlayers(lang.format("win-by-forfeit", Map.of("player", winnerName)));
 
             restorePlayerNow(uuid);
@@ -117,7 +150,9 @@ public class Game {
         }
     }
 
-    // ═══ Countdown ══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    // Countdown
+    // ═══════════════════════════════════════════════════════════════
 
     private void startCountdown() {
         state = GameState.COUNTDOWN;
@@ -128,18 +163,21 @@ public class Game {
                 if (state != GameState.COUNTDOWN) { cancel(); return; }
                 if (sec[0] <= 0) { cancel(); beginGame(); return; }
                 if (sec[0] <= 10 || sec[0] % 10 == 0)
-                    broadcastToPlayers(lang.format("countdown-start", Map.of("seconds", String.valueOf(sec[0]))));
+                    broadcastToPlayers(lang.format("countdown-start",
+                        Map.of("seconds", String.valueOf(sec[0]))));
                 sec[0]--;
             }
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
-    // ═══ Game Start ═════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    // Game Start
+    // ═══════════════════════════════════════════════════════════════
 
     private void beginGame() {
         state = GameState.PLAYING;
 
-        // ── Fully reset board (in-memory + world) before new game ──
+        // Fully reset board (in-memory + world)
         board.clear();
         Location origin = arena.getBoardOrigin();
         if (origin != null) {
@@ -147,52 +185,20 @@ public class Game {
             renderer.renderBoard(origin, board.getSize());
         }
 
-        // Randomly assign colors: player1/player2 get WHITE or BLACK; stable for the game.
-        Random rng = new Random();
-        if (isPvE) {
-            player1Color = rng.nextBoolean() ? Board.WHITE : Board.BLACK;
-            player2Color = (player1Color == Board.WHITE) ? Board.BLACK : Board.WHITE;
-        } else {
-            if (rng.nextBoolean()) {
-                player1Color = Board.WHITE;
-                player2Color = Board.BLACK;
-            } else {
-                player1Color = Board.BLACK;
-                player2Color = Board.WHITE;
-            }
-        }
-        // Black always moves first.
-        currentPlayer = Board.BLACK;
+        // Black always moves first
+        currentPlayerColor = Board.BLACK;
 
-        // White spawn = west side (player1Spawn), Black spawn = east side (player2Spawn)
+        // Spawn points
         Location whiteSpawn = arena.getPlayer1Spawn();
         Location blackSpawn = arena.getPlayer2Spawn();
 
-        Player p1 = Bukkit.getPlayer(player1);
-        if (p1 != null && p1.isOnline()) {
-            p1.teleport(player1Color == Board.WHITE ? whiteSpawn : blackSpawn);
-            p1.setGameMode(GameMode.ADVENTURE);
-            p1.setAllowFlight(true); p1.setFlying(true);
-            p1.getInventory().clear();
-            p1.sendMessage(lang.get(player1Color == Board.WHITE
-                ? "color-assigned-white" : "color-assigned-black"));
-        }
+        // Set up human player(s)
+        setupPlayer(whitePlayerId, Board.WHITE, whiteSpawn);
+        setupPlayer(blackPlayerId, Board.BLACK, blackSpawn);
 
-        if (!isPvE && player2 != null) {
-            Player p2 = Bukkit.getPlayer(player2);
-            if (p2 != null && p2.isOnline()) {
-                p2.teleport(player2Color == Board.WHITE ? whiteSpawn : blackSpawn);
-                p2.setGameMode(GameMode.ADVENTURE);
-                p2.setAllowFlight(true); p2.setFlying(true);
-                p2.getInventory().clear();
-                p2.sendMessage(lang.get(player2Color == Board.WHITE
-                    ? "color-assigned-white" : "color-assigned-black"));
-            }
-        }
-
-        String p1Name = p1 != null ? p1.getName() : "?";
-        String p2Name = isPvE ? "AI" : (player2 != null && Bukkit.getPlayer(player2) != null
-            ? Bukkit.getPlayer(player2).getName() : "?");
+        // Announce
+        String p1Name = playerName(whitePlayerId);
+        String p2Name = playerName(blackPlayerId);
         String msg = lang.format(isPvE ? "game-started-pve" : "game-started",
             Map.of("player", p1Name, "player1", p1Name, "player2", p2Name));
         broadcastToPlayers(msg);
@@ -202,104 +208,164 @@ public class Game {
         startTurn();
     }
 
-    // ═══ Turn ═══════════════════════════════════════════════════════
+    private void setupPlayer(UUID pid, int color, Location spawn) {
+        if (pid == null) return; // AI
+        Player p = Bukkit.getPlayer(pid);
+        if (p == null || !p.isOnline()) return;
+        p.teleport(spawn);
+        p.setGameMode(GameMode.ADVENTURE);
+        p.setAllowFlight(true);
+        p.setFlying(true);
+        p.getInventory().clear();
+        p.sendMessage(lang.get(color == Board.WHITE
+            ? "color-assigned-white" : "color-assigned-black"));
+    }
 
+    // ═══════════════════════════════════════════════════════════════
+    // Turn State Machine
+    // ═══════════════════════════════════════════════════════════════
+
+    /** Entry point for every turn. */
     private void startTurn() {
         if (state != GameState.PLAYING) return;
+        cancelTurnTimer();
         turnSecondsLeft = config.getTurnTimeout();
-        if (turnTimer != null) turnTimer.cancel();
 
-        Player cp = getCurrentPlayerId() != null ? Bukkit.getPlayer(getCurrentPlayerId()) : null;
-        if (cp != null && cp.isOnline()) cp.sendMessage(lang.format("your-turn", Map.of()));
-
-        if (isPvE && currentPlayer == player2Color && !aiThinking) { doAIMove(); return; }
-
-        Player op = getOpponentId() != null ? Bukkit.getPlayer(getOpponentId()) : null;
-        if (op != null && op.isOnline()) op.sendMessage(lang.format("opponent-turn", Map.of()));
-
-        turnTimer = new BukkitRunnable() {
-            @Override public void run() {
-                if (state != GameState.PLAYING) { cancel(); return; }
-                turnSecondsLeft--;
-                if (turnSecondsLeft <= 0) { cancel(); handleTimeout(); return; }
-                if (turnSecondsLeft <= 10) {
-                    Player p = getCurrentPlayerId() != null ? Bukkit.getPlayer(getCurrentPlayerId()) : null;
-                    if (p != null) p.sendMessage(lang.format("turn-timeout-warning",
-                        Map.of("seconds", String.valueOf(turnSecondsLeft))));
+        if (isCurrentPlayerAI()) {
+            doAIMove();
+        } else {
+            // Notify human player
+            Player cp = getCurrentPlayerOrNull();
+            if (cp != null && cp.isOnline()) {
+                cp.sendMessage(lang.format("your-turn", Map.of()));
+            }
+            // Notify opponent
+            UUID oppId = getOpponentPlayerId();
+            if (oppId != null) {
+                Player op = Bukkit.getPlayer(oppId);
+                if (op != null && op.isOnline()) {
+                    op.sendMessage(lang.format("opponent-turn", Map.of()));
                 }
             }
-        }.runTaskTimer(plugin, 20L, 20L);
+            startTurnTimer();
+        }
     }
 
-    private void doAIMove() {
-        aiThinking = true;
-        Player p1 = Bukkit.getPlayer(player1);
-        if (p1 != null) p1.sendMessage(lang.format("ai-thinking", Map.of()));
-        final int aiColor = player2Color;
-        // Clone the board so AI search cannot corrupt the live game state.
-        final Board searchBoard = board.copy();
-        new BukkitRunnable() {
-            @Override public void run() {
-                aiThinking = false;
-                if (state != GameState.PLAYING) return;
-                int[] move = ai.findBestMove(searchBoard, aiColor);
-                board.place(move[0], move[1], aiColor);
-                moveHistory.add(new Move(move[0], move[1], aiColor));
-                renderer.placePiece(arena.getBoardOrigin(), move[0], move[1], aiColor);
-                if (board.checkWin(move[0], move[1], aiColor)) { endGame(aiColor); return; }
-                if (board.isFull()) { endGame(0); return; }
-                currentPlayer = (aiColor == Board.WHITE) ? Board.BLACK : Board.WHITE;
-                startTurn();
-            }
-        }.runTask(plugin);
+    /** Advance to the next player's turn.  Single point of turn transition. */
+    private void advanceTurn() {
+        currentPlayerColor = (currentPlayerColor == Board.WHITE) ? Board.BLACK : Board.WHITE;
+        startTurn();
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Human Move (called from listener)
+    // ═══════════════════════════════════════════════════════════════
 
     public void placePiece(Player player, int row, int col) {
         if (state != GameState.PLAYING) return;
-        if (aiThinking) { player.sendMessage(lang.format("opponent-turn", Map.of())); return; }
+        if (aiThinking) {
+            player.sendMessage(lang.format("opponent-turn", Map.of()));
+            return;
+        }
 
+        UUID pid = player.getUniqueId();
         int piece;
-        if (player.getUniqueId().equals(player1)) piece = player1Color;
-        else if (!isPvE && player.getUniqueId().equals(player2)) piece = player2Color;
-        else { player.sendMessage(lang.format("not-your-turn", Map.of())); return; }
+        if (pid.equals(whitePlayerId)) {
+            piece = Board.WHITE;
+        } else if (pid.equals(blackPlayerId)) {
+            piece = Board.BLACK;
+        } else {
+            player.sendMessage(lang.format("not-your-turn", Map.of()));
+            return;
+        }
 
-        if (piece != currentPlayer) { player.sendMessage(lang.format("not-your-turn", Map.of())); return; }
-        if (!board.place(row, col, piece)) { player.sendMessage(lang.format("invalid-move", Map.of())); return; }
+        if (piece != currentPlayerColor) {
+            player.sendMessage(lang.format("not-your-turn", Map.of()));
+            return;
+        }
+
+        if (!board.place(row, col, piece)) {
+            player.sendMessage(lang.format("invalid-move", Map.of()));
+            return;
+        }
 
         moveHistory.add(new Move(row, col, piece));
         renderer.placePiece(arena.getBoardOrigin(), row, col, piece);
 
-        if (board.checkWin(row, col, piece)) { endGame(piece); return; }
-        if (board.isFull()) { endGame(0); return; }
-
-        currentPlayer = (currentPlayer == Board.WHITE) ? Board.BLACK : Board.WHITE;
-        startTurn();
+        if (checkGameEnd(row, col, piece)) return;
+        advanceTurn();
     }
 
-    private void handleTimeout() {
-        int winner = (currentPlayer == Board.WHITE) ? Board.BLACK : Board.WHITE;
-        Player loser = getCurrentPlayerId() != null ? Bukkit.getPlayer(getCurrentPlayerId()) : null;
-        if (loser != null) loser.sendMessage(lang.format("turn-timeout", Map.of("player", loser.getName())));
-        endGame(winner);
+    // ═══════════════════════════════════════════════════════════════
+    // AI Move (async: compute off-thread, apply on-thread)
+    // ═══════════════════════════════════════════════════════════════
+
+    private void doAIMove() {
+        aiThinking = true;
+        final int aiColor = currentPlayerColor;
+
+        // Copy board on main thread (safe snapshot)
+        final Board searchBoard = board.copy();
+
+        // Notify human that AI is thinking
+        UUID humanId = (aiColor == Board.WHITE) ? blackPlayerId : whitePlayerId;
+        if (humanId != null) {
+            Player human = Bukkit.getPlayer(humanId);
+            if (human != null && human.isOnline()) {
+                human.sendMessage(lang.format("ai-thinking", Map.of()));
+            }
+        }
+
+        // Compute off the main thread so we never freeze the server
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final int[] move = ai.findBestMove(searchBoard, aiColor);
+
+            // Apply result back on the main thread
+            new BukkitRunnable() {
+                @Override public void run() {
+                    aiThinking = false;
+                    if (state != GameState.PLAYING) return;
+
+                    board.place(move[0], move[1], aiColor);
+                    moveHistory.add(new Move(move[0], move[1], aiColor));
+                    renderer.placePiece(arena.getBoardOrigin(), move[0], move[1], aiColor);
+
+                    if (checkGameEnd(move[0], move[1], aiColor)) return;
+                    advanceTurn();
+                }
+            }.runTask(plugin);
+        });
     }
 
-    // ═══ Game End ═══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    // Game End
+    // ═══════════════════════════════════════════════════════════════
+
+    private boolean checkGameEnd(int row, int col, int piece) {
+        if (board.checkWin(row, col, piece)) {
+            endGame(piece);
+            return true;
+        }
+        if (board.isFull()) {
+            endGame(0);
+            return true;
+        }
+        return false;
+    }
 
     private void endGame(int winner) {
         state = GameState.ENDING;
-        cancelAllTasks();
+        cancelAllTimers();
 
         String winnerName = null;
         UUID loserId = null;
-        if (winner == player1Color) {
-            Player p = Bukkit.getPlayer(player1);
-            winnerName = (p != null) ? p.getName() : "White";
-            loserId = isPvE ? null : player2;
-        } else if (winner == player2Color) {
-            winnerName = isPvE ? "AI"
-                : (player2 != null && Bukkit.getPlayer(player2) != null
-                    ? Bukkit.getPlayer(player2).getName() : "Black");
-            loserId = isPvE ? player1 : player1;
+
+        if (winner == Board.WHITE) {
+            winnerName = playerName(whitePlayerId);
+            loserId = blackPlayerId;
+        } else if (winner == Board.BLACK) {
+            winnerName = playerName(blackPlayerId);
+            loserId = whitePlayerId;
         }
 
         String msg = winnerName != null
@@ -318,17 +384,32 @@ public class Game {
 
         new BukkitRunnable() {
             @Override public void run() {
-                restorePlayerNow(player1);
-                if (!isPvE && player2 != null) restorePlayerNow(player2);
+                restorePlayerNow(whitePlayerId);
+                restorePlayerNow(blackPlayerId);
                 fullCleanup();
             }
         }.runTaskLater(plugin, 100L);
     }
 
-    // ═══ Cleanup ════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    // Timeout
+    // ═══════════════════════════════════════════════════════════════
+
+    private void handleTimeout() {
+        int winner = (currentPlayerColor == Board.WHITE) ? Board.BLACK : Board.WHITE;
+        Player loser = getCurrentPlayerOrNull();
+        if (loser != null && loser.isOnline()) {
+            loser.sendMessage(lang.format("turn-timeout", Map.of("player", loser.getName())));
+        }
+        endGame(winner);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Cleanup
+    // ═══════════════════════════════════════════════════════════════
 
     private void fullCleanup() {
-        cancelAllTasks();
+        cancelAllTimers();
 
         Location origin = arena.getBoardOrigin();
         if (origin != null) renderer.clearPieces(origin, board.getSize());
@@ -339,60 +420,77 @@ public class Game {
         board.clear();
         moveHistory.clear();
         queuedPlayers.clear();
-        player1 = null;
-        player2 = null;
-        currentPlayer = Board.WHITE;
-        player1Color = Board.WHITE;
-        player2Color = Board.BLACK;
+        whitePlayerId = null;
+        blackPlayerId = null;
+        currentPlayerColor = Board.BLACK;
         isPvE = false;
+        aiThinking = false;
 
         arena.setState(ArenaState.IDLE);
         arena.setCurrentGame(null);
         state = GameState.WAITING;
     }
 
-    // ═══ Force End ══════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    // Force End
+    // ═══════════════════════════════════════════════════════════════
 
     public void forceEnd() {
-        cancelAllTasks();
+        cancelAllTimers();
         if (state == GameState.WAITING) {
-            restorePlayerNow(player1); restorePlayerNow(player2);
-            fullCleanup(); return;
+            restorePlayerNow(whitePlayerId);
+            restorePlayerNow(blackPlayerId);
+            fullCleanup();
+            return;
         }
         state = GameState.ENDING;
         broadcastToPlayers(lang.format("win-by-forfeit", Map.of("player", "N/A")));
-        restorePlayerNow(player1);
-        if (!isPvE && player2 != null) restorePlayerNow(player2);
-        new BukkitRunnable() { @Override public void run() { fullCleanup(); } }.runTaskLater(plugin, 40L);
+        restorePlayerNow(whitePlayerId);
+        restorePlayerNow(blackPlayerId);
+        new BukkitRunnable() {
+            @Override public void run() { fullCleanup(); }
+        }.runTaskLater(plugin, 40L);
     }
 
     public void forceEndWithWinner(UUID winnerId) {
-        cancelAllTasks();
+        cancelAllTimers();
         if (state == GameState.WAITING) {
-            restorePlayerNow(player1); restorePlayerNow(player2);
-            fullCleanup(); return;
+            restorePlayerNow(whitePlayerId);
+            restorePlayerNow(blackPlayerId);
+            fullCleanup();
+            return;
         }
         state = GameState.ENDING;
         Player winner = Bukkit.getPlayer(winnerId);
         broadcastToPlayers(lang.format("win-by-forfeit",
             Map.of("player", winner != null ? winner.getName() : "?")));
-        restorePlayerNow(player1);
-        if (!isPvE && player2 != null) restorePlayerNow(player2);
-        new BukkitRunnable() { @Override public void run() { fullCleanup(); } }.runTaskLater(plugin, 40L);
+        restorePlayerNow(whitePlayerId);
+        restorePlayerNow(blackPlayerId);
+        new BukkitRunnable() {
+            @Override public void run() { fullCleanup(); }
+        }.runTaskLater(plugin, 40L);
     }
 
-    // ═══ Helpers ════════════════════════════════════════════════════
+    // ═══════════════════════════════════════════════════════════════
+    // Timer helpers
+    // ═══════════════════════════════════════════════════════════════
 
-    private void restorePlayerNow(UUID pid) {
-        if (pid == null) return;
-        Player p = Bukkit.getPlayer(pid);
-        if (p != null && p.isOnline()) plugin.getGameManager().restorePlayerData(p);
-    }
-
-    private void cancelAllTasks() {
-        if (turnTimer != null) { turnTimer.cancel(); turnTimer = null; }
-        if (countdownTask != null) { countdownTask.cancel(); countdownTask = null; }
-        if (gameDurationTask != null) { gameDurationTask.cancel(); gameDurationTask = null; }
+    private void startTurnTimer() {
+        cancelTurnTimer();
+        turnTimer = new BukkitRunnable() {
+            @Override public void run() {
+                if (state != GameState.PLAYING) { cancel(); return; }
+                turnSecondsLeft--;
+                if (turnSecondsLeft <= 0) { cancel(); handleTimeout(); return; }
+                if (turnSecondsLeft <= 10) {
+                    Player p = getCurrentPlayerOrNull();
+                    if (p != null && p.isOnline()) {
+                        p.sendMessage(lang.format("turn-timeout-warning",
+                            Map.of("seconds", String.valueOf(turnSecondsLeft))));
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 20L, 20L);
     }
 
     private void startGameDurationTimer() {
@@ -405,22 +503,68 @@ public class Game {
         }.runTaskLater(plugin, config.getGameMaxDuration() * 20L);
     }
 
-    private UUID getCurrentPlayerId() {
-        if (currentPlayer == player1Color) return player1;
-        return player2;
+    private void cancelTurnTimer() {
+        if (turnTimer != null) { turnTimer.cancel(); turnTimer = null; }
     }
 
-    private UUID getOpponentId() {
-        if (currentPlayer == player1Color) return player2;
-        return player1;
+    private void cancelAllTimers() {
+        cancelTurnTimer();
+        if (countdownTask != null) { countdownTask.cancel(); countdownTask = null; }
+        if (gameDurationTask != null) { gameDurationTask.cancel(); gameDurationTask = null; }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Player identity helpers
+    // ═══════════════════════════════════════════════════════════════
+
+    private boolean isCurrentPlayerAI() {
+        return getCurrentPlayerId() == null;
+    }
+
+    private UUID getCurrentPlayerId() {
+        return (currentPlayerColor == Board.WHITE) ? whitePlayerId : blackPlayerId;
+    }
+
+    private Player getCurrentPlayerOrNull() {
+        UUID id = getCurrentPlayerId();
+        return id != null ? Bukkit.getPlayer(id) : null;
+    }
+
+    private UUID getOpponentPlayerId() {
+        return (currentPlayerColor == Board.WHITE) ? blackPlayerId : whitePlayerId;
+    }
+
+    private String playerName(UUID pid) {
+        if (pid == null) return isPvE ? "AI" : "?";
+        Player p = Bukkit.getPlayer(pid);
+        return (p != null) ? p.getName() : "?";
+    }
+
+    private void restorePlayerNow(UUID pid) {
+        if (pid == null) return;
+        Player p = Bukkit.getPlayer(pid);
+        if (p != null && p.isOnline()) plugin.getGameManager().restorePlayerData(p);
     }
 
     private void broadcastToPlayers(String msg) {
-        if (player1 != null) { Player p = Bukkit.getPlayer(player1); if (p != null && p.isOnline()) p.sendMessage(msg); }
-        if (!isPvE && player2 != null) { Player p = Bukkit.getPlayer(player2); if (p != null && p.isOnline()) p.sendMessage(msg); }
+        if (whitePlayerId != null) {
+            Player p = Bukkit.getPlayer(whitePlayerId);
+            if (p != null && p.isOnline()) p.sendMessage(msg);
+        }
+        if (blackPlayerId != null) {
+            Player p = Bukkit.getPlayer(blackPlayerId);
+            if (p != null && p.isOnline()) p.sendMessage(msg);
+        }
     }
 
-    public boolean hasPlayer(UUID pid) { return pid.equals(player1) || pid.equals(player2); }
+    // ═══════════════════════════════════════════════════════════════
+    // Public accessors
+    // ═══════════════════════════════════════════════════════════════
+
+    public boolean hasPlayer(UUID pid) {
+        return pid.equals(whitePlayerId) || pid.equals(blackPlayerId);
+    }
+
     public boolean isPlaying(UUID pid) {
         return (state == GameState.PLAYING || state == GameState.COUNTDOWN) && hasPlayer(pid);
     }
@@ -428,10 +572,19 @@ public class Game {
     public GameState getState() { return state; }
     public Board getBoard() { return board; }
     public Arena getArena() { return arena; }
-    public UUID getPlayer1() { return player1; }
-    public UUID getPlayer2() { return player2; }
+
+    /** @return the first human player (always non-null). */
+    public UUID getPlayer1() {
+        return isPvE ? (whitePlayerId != null ? whitePlayerId : blackPlayerId) : whitePlayerId;
+    }
+
+    /** @return the second player, or null for PvE. */
+    public UUID getPlayer2() {
+        return isPvE ? null : blackPlayerId;
+    }
+
     public boolean isPvE() { return isPvE; }
-    public int getCurrentPlayer() { return currentPlayer; }
+    public int getCurrentPlayer() { return currentPlayerColor; }
     public int getSpectatorCount() { return spectatorManager.getSpectatorCount(arena.getId()); }
     public int getMaxSpectators() { return arena.getMaxSpectators(); }
     public List<Move> getMoveHistory() { return moveHistory; }

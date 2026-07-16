@@ -6,6 +6,7 @@ import com.rikka.gomoku.arena.ArenaState;
 import com.rikka.gomoku.config.LanguageManager;
 import com.rikka.gomoku.game.Game;
 import com.rikka.gomoku.game.GameManager;
+import com.rikka.gomoku.game.GameState;
 import com.rikka.gomoku.spectator.SpectatorManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -107,7 +108,7 @@ public class GomokuCommand implements CommandExecutor, TabCompleter {
                 game = gameManager.createGame(arena);
             }
 
-            if (game.getState() == null || game.getState().name().equals("WAITING")) {
+            if (game.getState() == GameState.WAITING) {
                 game.addPlayer(player);
                 gameManager.setPlayerArena(player.getUniqueId(), arena.getId());
             } else {
