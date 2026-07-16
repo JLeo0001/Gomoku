@@ -23,6 +23,8 @@ countdown-cancelled: "{prefix} &c倒计时已取消（玩家不足）。"
 # 对局
 game-started: "{prefix} &a对局开始！&f{player1} &7(vs) &f{player2}"
 game-started-pve: "{prefix} &a人机对局开始！&f{player} &7(vs) &8AI"
+color-assigned-white: "{prefix} &a你执&f白棋&a！"
+color-assigned-black: "{prefix} &a你执&f黑棋&a！"
 your-turn: "{prefix} &e轮到你了！请点击棋盘落子。"
 opponent-turn: "{prefix} &7等待对手落子..."
 ai-thinking: "{prefix} &7AI 正在思考..."

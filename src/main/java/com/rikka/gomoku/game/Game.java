@@ -32,6 +32,10 @@ public class Game {
     private UUID player2;
     private boolean isPvE;
 
+    // Per-game color assignment (randomized, stable for the game)
+    private int player1Color = Board.WHITE;
+    private int player2Color = Board.BLACK;
+
     private int currentPlayer = Board.WHITE;
     private final List<Move> moveHistory = new ArrayList<>();
     private final List<UUID> queuedPlayers = new ArrayList<>();
@@ -136,25 +140,48 @@ public class Game {
         state = GameState.PLAYING;
         renderer.renderBoard(arena.getBoardOrigin(), board.getSize());
 
+        // Randomly assign colors: player1/player2 get WHITE or BLACK; stable for the game.
+        Random rng = new Random();
+        if (isPvE) {
+            player1Color = rng.nextBoolean() ? Board.WHITE : Board.BLACK;
+            player2Color = (player1Color == Board.WHITE) ? Board.BLACK : Board.WHITE;
+        } else {
+            if (rng.nextBoolean()) {
+                player1Color = Board.WHITE;
+                player2Color = Board.BLACK;
+            } else {
+                player1Color = Board.BLACK;
+                player2Color = Board.WHITE;
+            }
+        }
+        // Black always moves first.
+        currentPlayer = Board.BLACK;
+
+        // White spawn = west side (player1Spawn), Black spawn = east side (player2Spawn)
+        Location whiteSpawn = arena.getPlayer1Spawn();
+        Location blackSpawn = arena.getPlayer2Spawn();
+
         Player p1 = Bukkit.getPlayer(player1);
         if (p1 != null && p1.isOnline()) {
-            p1.teleport(arena.getPlayer1Spawn());
+            p1.teleport(player1Color == Board.WHITE ? whiteSpawn : blackSpawn);
             p1.setGameMode(GameMode.ADVENTURE);
             p1.setAllowFlight(true); p1.setFlying(true);
             p1.getInventory().clear();
+            p1.sendMessage(lang.get(player1Color == Board.WHITE
+                ? "color-assigned-white" : "color-assigned-black"));
         }
 
         if (!isPvE && player2 != null) {
             Player p2 = Bukkit.getPlayer(player2);
             if (p2 != null && p2.isOnline()) {
-                p2.teleport(arena.getPlayer2Spawn());
+                p2.teleport(player2Color == Board.WHITE ? whiteSpawn : blackSpawn);
                 p2.setGameMode(GameMode.ADVENTURE);
                 p2.setAllowFlight(true); p2.setFlying(true);
                 p2.getInventory().clear();
+                p2.sendMessage(lang.get(player2Color == Board.WHITE
+                    ? "color-assigned-white" : "color-assigned-black"));
             }
         }
-
-        currentPlayer = new Random().nextBoolean() ? Board.WHITE : Board.BLACK;
 
         String p1Name = p1 != null ? p1.getName() : "?";
         String p2Name = isPvE ? "AI" : (player2 != null && Bukkit.getPlayer(player2) != null
@@ -178,7 +205,7 @@ public class Game {
         Player cp = getCurrentPlayerId() != null ? Bukkit.getPlayer(getCurrentPlayerId()) : null;
         if (cp != null && cp.isOnline()) cp.sendMessage(lang.format("your-turn", Map.of()));
 
-        if (isPvE && currentPlayer == Board.BLACK && !aiThinking) { doAIMove(); return; }
+        if (isPvE && currentPlayer == player2Color && !aiThinking) { doAIMove(); return; }
 
         Player op = getOpponentId() != null ? Bukkit.getPlayer(getOpponentId()) : null;
         if (op != null && op.isOnline()) op.sendMessage(lang.format("opponent-turn", Map.of()));
@@ -201,17 +228,18 @@ public class Game {
         aiThinking = true;
         Player p1 = Bukkit.getPlayer(player1);
         if (p1 != null) p1.sendMessage(lang.format("ai-thinking", Map.of()));
+        final int aiColor = player2Color;
         new BukkitRunnable() {
             @Override public void run() {
                 aiThinking = false;
                 if (state != GameState.PLAYING) return;
-                int[] move = ai.findBestMove(board, Board.BLACK);
-                board.place(move[0], move[1], Board.BLACK);
-                moveHistory.add(new Move(move[0], move[1], Board.BLACK));
-                renderer.placePiece(arena.getBoardOrigin(), move[0], move[1], Board.BLACK);
-                if (board.checkWin(move[0], move[1], Board.BLACK)) { endGame(Board.BLACK); return; }
+                int[] move = ai.findBestMove(board, aiColor);
+                board.place(move[0], move[1], aiColor);
+                moveHistory.add(new Move(move[0], move[1], aiColor));
+                renderer.placePiece(arena.getBoardOrigin(), move[0], move[1], aiColor);
+                if (board.checkWin(move[0], move[1], aiColor)) { endGame(aiColor); return; }
                 if (board.isFull()) { endGame(0); return; }
-                currentPlayer = Board.WHITE;
+                currentPlayer = (aiColor == Board.WHITE) ? Board.BLACK : Board.WHITE;
                 startTurn();
             }
         }.runTask(plugin);
@@ -222,8 +250,8 @@ public class Game {
         if (aiThinking) { player.sendMessage(lang.format("opponent-turn", Map.of())); return; }
 
         int piece;
-        if (player.getUniqueId().equals(player1)) piece = Board.WHITE;
-        else if (!isPvE && player.getUniqueId().equals(player2)) piece = Board.BLACK;
+        if (player.getUniqueId().equals(player1)) piece = player1Color;
+        else if (!isPvE && player.getUniqueId().equals(player2)) piece = player2Color;
         else { player.sendMessage(lang.format("not-your-turn", Map.of())); return; }
 
         if (piece != currentPlayer) { player.sendMessage(lang.format("not-your-turn", Map.of())); return; }
@@ -253,10 +281,10 @@ public class Game {
         cancelAllTasks();
 
         String winnerName = null;
-        if (winner == Board.WHITE) {
+        if (winner == player1Color) {
             Player p = Bukkit.getPlayer(player1);
             winnerName = (p != null) ? p.getName() : "White";
-        } else if (winner == Board.BLACK) {
+        } else if (winner == player2Color) {
             winnerName = isPvE ? "AI"
                 : (player2 != null && Bukkit.getPlayer(player2) != null
                     ? Bukkit.getPlayer(player2).getName() : "Black");
@@ -294,6 +322,8 @@ public class Game {
         player1 = null;
         player2 = null;
         currentPlayer = Board.WHITE;
+        player1Color = Board.WHITE;
+        player2Color = Board.BLACK;
         isPvE = false;
 
         arena.setState(ArenaState.IDLE);
@@ -356,11 +386,13 @@ public class Game {
     }
 
     private UUID getCurrentPlayerId() {
-        return currentPlayer == Board.WHITE ? player1 : player2;
+        if (currentPlayer == player1Color) return player1;
+        return player2;
     }
 
     private UUID getOpponentId() {
-        return currentPlayer == Board.WHITE ? player2 : player1;
+        if (currentPlayer == player1Color) return player2;
+        return player1;
     }
 
     private void broadcastToPlayers(String msg) {

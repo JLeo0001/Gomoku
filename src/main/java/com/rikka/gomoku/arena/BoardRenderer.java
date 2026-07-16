@@ -113,8 +113,8 @@ public class BoardRenderer {
             }
         }
 
-        // Beacon marker at center
-        world.getBlockAt(half, y + 1, boardSize + 5).setType(Material.BEACON);
+        // Beacon marker at center (sits flush on the platform)
+        world.getBlockAt(half, y, boardSize + 5).setType(Material.BEACON);
     }
 
     // ═══════════════════════════════════════════════════════════════

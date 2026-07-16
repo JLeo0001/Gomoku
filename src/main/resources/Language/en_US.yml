@@ -23,6 +23,8 @@ countdown-cancelled: "{prefix} &cCountdown cancelled (not enough players)."
 # Game
 game-started: "{prefix} &aGame started! &f{player1} &7vs &f{player2}"
 game-started-pve: "{prefix} &aPvE game started! &f{player} &7vs &8AI"
+color-assigned-white: "{prefix} &aYou play as &fWhite&a."
+color-assigned-black: "{prefix} &aYou play as &fBlack&a."
 your-turn: "{prefix} &eYour turn! Click the board to place a piece."
 opponent-turn: "{prefix} &7Waiting for opponent..."
 ai-thinking: "{prefix} &7AI is thinking..."
